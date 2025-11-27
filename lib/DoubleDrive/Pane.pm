@@ -14,6 +14,7 @@ class DoubleDrive::Pane {
     field $selected_index = 0;
     field $widget :reader;
     field $scroller;
+    field $is_active = false;
 
     ADJUST {
         $current_path = path($path);
@@ -76,5 +77,10 @@ class DoubleDrive::Pane {
         if ($selected->is_dir) {
             $self->change_directory($selected);
         }
+    }
+
+    method set_active($active) {
+        $is_active = $active;
+        $widget->set_style(linetype => $is_active ? "double" : "single");
     }
 }
