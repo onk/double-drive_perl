@@ -1,0 +1,11 @@
+#!/usr/bin/env perl
+
+use v5.42;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use DoubleDrive;
+
+my $app = DoubleDrive->new();
+$app->run();
