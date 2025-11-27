@@ -89,7 +89,11 @@ class DoubleDrive::Pane {
     }
 
     method change_directory($new_path) {
-        $current_path = $new_path->realpath;
+        # Handle both string paths and Path::Tiny objects
+        my $path_obj = $new_path isa Path::Tiny
+            ? $new_path
+            : path($current_path, $new_path);
+        $current_path = $path_obj->realpath;
         $selected_index = 0;
         $scroll_offset = 0;
         $widget->set_title($current_path->stringify);

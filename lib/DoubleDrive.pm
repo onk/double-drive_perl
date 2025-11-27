@@ -41,6 +41,7 @@ class DoubleDrive {
         $tickit->bind_key('Up' => sub { $active_pane->move_selection(-1) });
         $tickit->bind_key('Enter' => sub { $active_pane->enter_selected() });
         $tickit->bind_key('Tab' => sub { $self->switch_pane() });
+        $tickit->bind_key('Backspace' => sub { $active_pane->change_directory("..") });
     }
 
     method switch_pane() {
