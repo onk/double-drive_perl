@@ -2,18 +2,19 @@ use v5.42;
 use experimental 'class';
 
 use Tickit::Widget::Frame;
-use Tickit::Widget::Scroller;
-use Tickit::Widget::Scroller::Item::Text;
+use DoubleDrive::TextWidget;
 
 class DoubleDrive::Pane {
     use Path::Tiny qw(path);
+    use List::Util qw(min);
 
     field $path :param;          # Initial path (string or Path::Tiny object) passed to constructor
     field $current_path;         # Current directory as Path::Tiny object
     field $files = [];
     field $selected_index = 0;
+    field $scroll_offset = 0;    # First visible item index
     field $widget :reader;
-    field $scroller;
+    field $text_widget;
     field $is_active = false;
 
     ADJUST {
@@ -23,12 +24,12 @@ class DoubleDrive::Pane {
     }
 
     method _build_widget() {
-        $scroller = Tickit::Widget::Scroller->new();
+        $text_widget = DoubleDrive::TextWidget->new(text => "");
 
         $widget = Tickit::Widget::Frame->new(
             style => { linetype => "single" },
             title => $current_path->absolute->stringify,
-        )->set_child($scroller);
+        )->set_child($text_widget);
     }
 
     method _load_directory() {
@@ -37,21 +38,46 @@ class DoubleDrive::Pane {
         $self->_render();
     }
 
-    method _render() {
-        # Recreate scroller with current files and selection
-        $scroller = Tickit::Widget::Scroller->new();
+    method after_window_attached() {
+        $self->_render();
+    }
 
-        for my ($index, $file) (indexed @$files) {
+    method _render() {
+        # Skip rendering if not attached to window yet
+        my $window = $text_widget->window;
+        return unless $window;
+
+        # Handle empty directory
+        if (@$files == 0) {
+            $text_widget->set_text("");
+            return;
+        }
+
+        my $height = $window->lines;
+
+        # Adjust scroll offset to keep selected item visible
+        if ($selected_index < $scroll_offset) {
+            # Selected item is above visible area
+            $scroll_offset = $selected_index;
+        } elsif ($selected_index >= $scroll_offset + $height) {
+            # Selected item is below visible area
+            $scroll_offset = $selected_index - $height + 1;
+        }
+
+        # Build visible content
+        my $content_lines = [];
+        my $end_index = min($scroll_offset + $height - 1, $#$files);
+
+        for my $index ($scroll_offset .. $end_index) {
+            my $file = $files->[$index];
             my $name = $file->basename;
             $name .= "/" if $file->is_dir;
 
             my $selected = ($index == $selected_index) ? "> " : "  ";
-            my $line = $selected . $name;
-
-            $scroller->push(Tickit::Widget::Scroller::Item::Text->new($line));
+            push @$content_lines, $selected . $name;
         }
 
-        $widget->set_child($scroller);
+        $text_widget->set_text(join("\n", @$content_lines));
     }
 
     method move_selection($delta) {
@@ -66,6 +92,7 @@ class DoubleDrive::Pane {
     method change_directory($new_path) {
         $current_path = $new_path;
         $selected_index = 0;
+        $scroll_offset = 0;
         $widget->set_title($current_path->absolute->stringify);
         $self->_load_directory();
     }

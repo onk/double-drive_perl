@@ -28,6 +28,12 @@ class DoubleDrive {
         $tickit = Tickit->new(root => $hbox);
         $active_pane = $left_pane;
         $left_pane->set_active(true);
+
+        # Trigger initial render after event loop starts and widgets are attached
+        $tickit->later(sub {
+            $left_pane->after_window_attached();
+            $right_pane->after_window_attached();
+        });
     }
 
     method _setup_keybindings() {
