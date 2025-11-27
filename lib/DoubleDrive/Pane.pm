@@ -10,6 +10,7 @@ class DoubleDrive::Pane {
     use List::Util qw(min);
     use POSIX qw(strftime);
     use Encode qw(decode_utf8);
+    use Unicode::Normalize qw(NFC);
     use Unicode::GCString;
 
     field $path :param;          # Initial path (string or Path::Tiny object) passed to constructor
@@ -32,7 +33,7 @@ class DoubleDrive::Pane {
 
         $widget = Tickit::Widget::Frame->new(
             style => { linetype => "single" },
-            title => $current_path->absolute->stringify,
+            title => NFC($current_path->absolute->stringify),
         )->set_child($text_widget);
     }
 
@@ -78,6 +79,8 @@ class DoubleDrive::Pane {
         for my $index ($scroll_offset .. $end_index) {
             my $file = $files->[$index];
             my $name = decode_utf8($file->basename);
+            # macOS yields NFD names; normalize to NFC so Tickit width accounting stays aligned
+            $name = NFC($name);
             $name = ".." if $file eq $current_path->parent;
             $name .= "/" if $file->is_dir;
 
@@ -166,7 +169,7 @@ class DoubleDrive::Pane {
         $current_path = $path_obj->realpath;
         $selected_index = 0;
         $scroll_offset = 0;
-        $widget->set_title($current_path->stringify);
+        $widget->set_title(NFC($current_path->stringify));
         $self->_load_directory();
     }
 
