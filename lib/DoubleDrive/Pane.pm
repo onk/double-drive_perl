@@ -17,11 +17,11 @@ class DoubleDrive::Pane {
 
     ADJUST {
         $current_path = path($path);
-        $self->build_widget();
-        $self->load_directory();
+        $self->_build_widget();
+        $self->_load_directory();
     }
 
-    method build_widget() {
+    method _build_widget() {
         $scroller = Tickit::Widget::Scroller->new();
 
         $widget = Tickit::Widget::Frame->new(
@@ -30,13 +30,13 @@ class DoubleDrive::Pane {
         )->set_child($scroller);
     }
 
-    method load_directory() {
+    method _load_directory() {
         # Get all entries and sort alphabetically (case-insensitive)
         $files = [sort { fc($a->basename) cmp fc($b->basename) } $current_path->children];
-        $self->render();
+        $self->_render();
     }
 
-    method render() {
+    method _render() {
         # Recreate scroller with current files and selection
         $scroller = Tickit::Widget::Scroller->new();
 
@@ -58,7 +58,7 @@ class DoubleDrive::Pane {
 
         if ($new_index >= 0 && $new_index < scalar(@$files)) {
             $selected_index = $new_index;
-            $self->render();
+            $self->_render();
         }
     }
 
@@ -66,7 +66,7 @@ class DoubleDrive::Pane {
         $current_path = $new_path;
         $selected_index = 0;
         $widget->set_title($current_path->absolute->stringify);
-        $self->load_directory();
+        $self->_load_directory();
     }
 
     method enter_selected() {
