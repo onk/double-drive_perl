@@ -1,4 +1,5 @@
 use v5.42;
+use utf8;
 use experimental 'class';
 
 use Tickit::Widget::Frame;
@@ -7,6 +8,9 @@ use DoubleDrive::TextWidget;
 class DoubleDrive::Pane {
     use Path::Tiny qw(path);
     use List::Util qw(min);
+    use POSIX qw(strftime);
+    use Encode qw(decode_utf8);
+    use Unicode::GCString;
 
     field $path :param;          # Initial path (string or Path::Tiny object) passed to constructor
     field $current_path;         # Current directory as Path::Tiny object
@@ -52,6 +56,11 @@ class DoubleDrive::Pane {
         return unless $window;
 
         my $height = $window->lines;
+        my $width = $window->cols;
+
+        # Calculate max name width (width - selection(2) - size(8) - spacing(3) - mtime(11))
+        my $max_name_width = $width - 2 - 8 - 3 - 11;
+        $max_name_width = 10 if $max_name_width < 10;  # Minimum width
 
         # Adjust scroll offset to keep selected item visible
         if ($selected_index < $scroll_offset) {
@@ -68,15 +77,76 @@ class DoubleDrive::Pane {
 
         for my $index ($scroll_offset .. $end_index) {
             my $file = $files->[$index];
-            my $name = $file->basename;
+            my $name = decode_utf8($file->basename);
             $name = ".." if $file eq $current_path->parent;
             $name .= "/" if $file->is_dir;
 
             my $selected = ($index == $selected_index) ? "> " : "  ";
-            push @$content_lines, $selected . $name;
+
+            # Get file stats
+            my $stat = $file->stat;
+            if ($stat) {
+                my $size = $self->_format_size($stat->size);
+                my $mtime = $self->_format_mtime($stat->mtime);
+                my $formatted_name = $self->_format_name($name, $max_name_width);
+                push @$content_lines, $selected . $formatted_name . " " . $size . "  " . $mtime;
+            } else {
+                my $formatted_name = $self->_format_name($name, $max_name_width);
+                push @$content_lines, $selected . $formatted_name;
+            }
         }
 
         $text_widget->set_text(join("\n", @$content_lines));
+    }
+
+    method _format_size($bytes) {
+        my $units = [qw(B K M G T)];
+        my $unit_index = 0;
+        my $size = $bytes;
+
+        while ($size >= 1024 && $unit_index < $#$units) {
+            $size /= 1024;
+            $unit_index++;
+        }
+
+        return sprintf("%6.1f%s", $size, $units->[$unit_index]);
+    }
+
+    method _format_mtime($mtime) {
+        my $one_year_ago = time() - (365 * 24 * 60 * 60);
+
+        if ($mtime > $one_year_ago) {
+            return strftime("%m/%d %H:%M", localtime($mtime));
+        } else {
+            return strftime("%Y-%m-%d", localtime($mtime));
+        }
+    }
+
+    method _format_name($str, $target_width) {
+        my $gc = Unicode::GCString->new($str);
+        my $str_width = $gc->columns;
+
+        if ($str_width <= $target_width) {
+            return $str . (' ' x ($target_width - $str_width));
+        }
+
+        my $ellipsis = "...";
+        my $ellipsis_width = 3;
+        my $truncate_limit = $target_width - $ellipsis_width;
+        return $ellipsis if $truncate_limit <= 0;
+
+        my $out = "";
+        my $used_width = 0;
+        for my $g ($str =~ /\X/g) {
+            my $w = Unicode::GCString->new($g)->columns;
+            last if $used_width + $w > $truncate_limit;
+            $out .= $g;
+            $used_width += $w;
+        }
+
+        my $padding = $target_width - ($used_width + $ellipsis_width);
+        $padding = 0 if $padding < 0;
+        return $out . $ellipsis . (' ' x $padding);
     }
 
     method move_selection($delta) {
