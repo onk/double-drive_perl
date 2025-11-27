@@ -3,8 +3,7 @@ use experimental 'class';
 
 use Tickit;
 use Tickit::Widget::HBox;
-use Tickit::Widget::Frame;
-use Tickit::Widget::Static;
+use DoubleDrive::Pane;
 
 class DoubleDrive {
     field $tickit;
@@ -16,16 +15,11 @@ class DoubleDrive {
     method _build_ui() {
         my $hbox = Tickit::Widget::HBox->new(spacing => 1);
 
-        my $left = Tickit::Widget::Frame->new(
-            style => { linetype => "single" },
-        )->set_child(Tickit::Widget::Static->new(text => "Left Pane"));
+        my $left = DoubleDrive::Pane->new(current_path => '.');
+        my $right = DoubleDrive::Pane->new(current_path => '.');
 
-        my $right = Tickit::Widget::Frame->new(
-            style => { linetype => "single" },
-        )->set_child(Tickit::Widget::Static->new(text => "Right Pane"));
-
-        $hbox->add($left, expand => 1);
-        $hbox->add($right, expand => 1);
+        $hbox->add($left->widget, expand => 1);
+        $hbox->add($right->widget, expand => 1);
 
         $tickit = Tickit->new(root => $hbox);
     }
