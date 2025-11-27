@@ -35,6 +35,10 @@ class DoubleDrive::Pane {
     method _load_directory() {
         # Get all entries and sort alphabetically (case-insensitive)
         $files = [sort { fc($a->basename) cmp fc($b->basename) } $current_path->children];
+
+        # Add parent directory at the beginning (unless we're at root)
+        unshift @$files, $current_path->parent if $current_path->parent ne $current_path;
+
         $self->_render();
     }
 
@@ -46,12 +50,6 @@ class DoubleDrive::Pane {
         # Skip rendering if not attached to window yet
         my $window = $text_widget->window;
         return unless $window;
-
-        # Handle empty directory
-        if (@$files == 0) {
-            $text_widget->set_text("");
-            return;
-        }
 
         my $height = $window->lines;
 
@@ -71,6 +69,7 @@ class DoubleDrive::Pane {
         for my $index ($scroll_offset .. $end_index) {
             my $file = $files->[$index];
             my $name = $file->basename;
+            $name = ".." if $file eq $current_path->parent;
             $name .= "/" if $file->is_dir;
 
             my $selected = ($index == $selected_index) ? "> " : "  ";
@@ -90,10 +89,10 @@ class DoubleDrive::Pane {
     }
 
     method change_directory($new_path) {
-        $current_path = $new_path;
+        $current_path = $new_path->realpath;
         $selected_index = 0;
         $scroll_offset = 0;
-        $widget->set_title($current_path->absolute->stringify);
+        $widget->set_title($current_path->stringify);
         $self->_load_directory();
     }
 
