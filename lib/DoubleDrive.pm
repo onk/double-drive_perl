@@ -9,7 +9,7 @@ class DoubleDrive {
     use Tickit::Widget::Static;
     use DoubleDrive::Pane;
     use DoubleDrive::ConfirmDialog;
-    use File::Copy::Recursive qw(rcopy);
+    use DoubleDrive::FileManipulator;
 
     field $tickit;
     field $left_pane :reader;    # :reader for testing
@@ -162,19 +162,7 @@ class DoubleDrive {
     }
 
     method _perform_delete($files) {
-        my $failed = [];
-
-        for my $file (@$files) {
-            try {
-                if ($file->is_dir) {
-                    $file->remove_tree;
-                } else {
-                    $file->remove;
-                }
-            } catch ($e) {
-                push @$failed, { file => $file->basename, error => $e };
-            }
-        }
+        my $failed = DoubleDrive::FileManipulator->delete_files($files);
 
         # Reload directory
         $active_pane->reload_directory();
@@ -288,22 +276,7 @@ class DoubleDrive {
     }
 
     method _perform_copy($files, $dest_path, $dest_pane) {
-        my $failed = [];
-
-        for my $file (@$files) {
-            try {
-                my $dest_file = $dest_path->child($file->basename);
-                if ($file->is_dir) {
-                    # For directories, use recursive copy
-                    rcopy($file->stringify, $dest_file->stringify)
-                        or die "rcopy failed: $!";
-                } else {
-                    $file->copy($dest_file);
-                }
-            } catch ($e) {
-                push @$failed, { file => $file->basename, error => $e };
-            }
-        }
+        my $failed = DoubleDrive::FileManipulator->copy_files($files, $dest_path);
 
         # Reload destination pane directory
         $dest_pane->reload_directory();
