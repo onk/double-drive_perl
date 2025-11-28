@@ -34,8 +34,8 @@ subtest 'copy current file without confirmation' => sub {
     my $left = $app->left_pane();
     my $right = $app->right_pane();
 
-    $left->change_directory(path($src_dir)->absolute);
-    $right->change_directory(path($dest_dir)->absolute);
+    $left->change_directory(path($src_dir));
+    $right->change_directory(path($dest_dir));
     flush_tickit;
 
     # Move to file1 in left pane
@@ -68,8 +68,8 @@ subtest 'cancel copy operation when overwriting' => sub {
     my $left = $app->left_pane();
     my $right = $app->right_pane();
 
-    $left->change_directory(path($src_dir)->absolute);
-    $right->change_directory(path($dest_dir)->absolute);
+    $left->change_directory(path($src_dir));
+    $right->change_directory(path($dest_dir));
     flush_tickit;
 
     # Write different content to dest file1
@@ -110,8 +110,8 @@ subtest 'copy multiple selected files' => sub {
     my $left = $app->left_pane();
     my $right = $app->right_pane();
 
-    $left->change_directory(path($src_dir)->absolute);
-    $right->change_directory(path($dest_dir)->absolute);
+    $left->change_directory(path($src_dir));
+    $right->change_directory(path($dest_dir));
     flush_tickit;
 
     # Select file1 and file2
@@ -149,8 +149,8 @@ subtest 'copy shows overwrite warning' => sub {
     my $left = $app->left_pane();
     my $right = $app->right_pane();
 
-    $left->change_directory(path($src_dir)->absolute);
-    $right->change_directory(path($dest_dir)->absolute);
+    $left->change_directory(path($src_dir));
+    $right->change_directory(path($dest_dir));
     flush_tickit;
 
     # Write different content to dest file1
@@ -192,8 +192,8 @@ subtest 'copy directory recursively' => sub {
     my $left = $app->left_pane();
     my $right = $app->right_pane();
 
-    $left->change_directory(path($src_dir)->absolute);
-    $right->change_directory(path($dest_dir)->absolute);
+    $left->change_directory(path($src_dir));
+    $right->change_directory(path($dest_dir));
     flush_tickit;
 
     # Verify source subdir exists
@@ -241,8 +241,8 @@ subtest 'copy is skipped when both panes are the same path' => sub {
     my $left = $app->left_pane();
     my $right = $app->right_pane();
 
-    $left->change_directory(path($dir)->absolute);
-    $right->change_directory(path($dir)->absolute);
+    $left->change_directory(path($dir));
+    $right->change_directory(path($dir));
     flush_tickit;
 
     # Move to file1
