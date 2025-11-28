@@ -248,4 +248,31 @@ class DoubleDrive::Pane {
             return [$files->[$selected_index]];
         }
     }
+
+    method reload_directory() {
+        # Remember the file the cursor was on
+        my $current_file = $files->[$selected_index];
+        my $current_file_path = $current_file->stringify;
+
+        $self->_load_directory();
+
+        # Try to find the same file in the reloaded list
+        my $new_index;
+        for my ($i, $file) (indexed @$files) {
+            if ($file->stringify eq $current_file_path) {
+                $new_index = $i;
+                last;
+            }
+        }
+
+        # If file not found (was deleted), keep similar position
+        if (!defined $new_index) {
+            $new_index = $selected_index;
+            $new_index = $#$files if $new_index > $#$files;
+        }
+
+        $selected_index = $new_index;
+        $self->_render();
+        $self->_notify_status_change();
+    }
 }

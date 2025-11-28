@@ -102,12 +102,109 @@ class DoubleDrive {
         $self->normal_bind_key('Tab' => sub { $self->switch_pane() });
         $self->normal_bind_key('Backspace' => sub { $active_pane->change_directory("..") });
         $self->normal_bind_key(' ' => sub { $active_pane->toggle_selection() });
+        $self->normal_bind_key('d' => sub { $self->delete_files() });
     }
 
     method switch_pane() {
         $active_pane->set_active(false);
         $active_pane = ($active_pane == $left_pane) ? $right_pane : $left_pane;
         $active_pane->set_active(true);
+    }
+
+    method delete_files() {
+        my $files = $active_pane->get_files_to_operate();
+        return unless @$files;
+
+        # Skip parent directory
+        $files = [grep { $_ ne $active_pane->current_path->parent } @$files];
+        return unless @$files;
+
+        my $count = scalar(@$files);
+        my $file_list = join(", ", map { $_->basename } @$files);
+        my $message = $count == 1
+            ? "Delete $file_list?"
+            : "Delete $count files ($file_list)?";
+
+        my $dialog;
+        $dialog = DoubleDrive::ConfirmDialog->new(
+            message => $message,
+            tickit => $tickit,
+            float_box => $float_box,
+            on_show => sub {
+                $dialog_open = true;
+                $self->dialog_bind_key('y' => sub { $dialog->confirm() });
+                $self->dialog_bind_key('Y' => sub { $dialog->confirm() });
+                $self->dialog_bind_key('n' => sub { $dialog->cancel() });
+                $self->dialog_bind_key('N' => sub { $dialog->cancel() });
+                $self->dialog_bind_key('Tab' => sub { $dialog->toggle_option() });
+                $self->dialog_bind_key('Enter' => sub { $dialog->execute_selected() });
+                $self->dialog_bind_key('Escape' => sub { $dialog->cancel() });
+            },
+            on_close => sub {
+                $dialog_open = false;
+                $dialog_keys = {};
+            },
+            on_confirm => sub {
+                $self->_perform_delete($files);
+            },
+            on_cancel => sub {
+                # Just restore UI, nothing to do
+            }
+        );
+
+        $dialog->show();
+    }
+
+    method _perform_delete($files) {
+        my $failed = [];
+
+        for my $file (@$files) {
+            try {
+                if ($file->is_dir) {
+                    $file->remove_tree;
+                } else {
+                    $file->remove;
+                }
+            } catch ($e) {
+                push @$failed, { file => $file->basename, error => $e };
+            }
+        }
+
+        # Reload directory
+        $active_pane->reload_directory();
+
+        # Show error dialog if any deletions failed
+        if (@$failed) {
+            my $error_msg = "Failed to delete:\n" .
+                join("\n", map { "- $_->{file}: $_->{error}" } @$failed);
+            $self->_show_error_dialog($error_msg);
+        }
+    }
+
+    method _show_error_dialog($message) {
+        my $dialog;
+        $dialog = DoubleDrive::ConfirmDialog->new(
+            message => $message,
+            tickit => $tickit,
+            float_box => $float_box,
+            mode => 'alert',
+            on_show => sub {
+                $dialog_open = true;
+                $self->dialog_bind_key('Enter' => sub { $dialog->confirm() });
+                $self->dialog_bind_key('Escape' => sub { $dialog->cancel() });
+            },
+            on_close => sub {
+                $dialog_open = false;
+                $dialog_keys = {};
+            },
+            on_confirm => sub {
+                # Just close the dialog
+            },
+            on_cancel => sub {
+                # Same as confirm for error dialog
+            }
+        );
+        $dialog->show();
     }
 
     method run() {

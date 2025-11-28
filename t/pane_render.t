@@ -76,4 +76,83 @@ subtest 'enter_selected descends into directory and resets selection' => sub {
     is $lines[2], '  file2         0.0B  01/15 10:30', 'file2 in subdirectory';
 };
 
+subtest 'reload_directory preserves cursor position' => sub {
+    my $dir = temp_dir_with_files('file1', 'file2', 'file3');
+    my ($texts, $mock_widget) = capture_widget_text($test_window);
+    my $mock_stat = mock_file_stat();
+
+    my $pane = DoubleDrive::Pane->new(
+        path => $dir,
+        on_status_change => sub {}
+    );
+
+    # Move to file2 (index 2: ../, file1, file2, file3)
+    $pane->move_selection(2);
+    @$texts = ();
+
+    # Reload directory
+    $pane->reload_directory();
+
+    # Cursor should still be on file2
+    my @lines = split /\n/, $texts->[-1];
+    is $lines[2], '> file2         0.0B  01/15 10:30', 'cursor preserved on file2 after reload';
+};
+
+subtest 'reload_directory updates index when earlier file is deleted' => sub {
+    use Path::Tiny qw(path);
+
+    my $dir = temp_dir_with_files('file1', 'file2', 'file3');
+    my ($texts, $mock_widget) = capture_widget_text($test_window);
+    my $mock_stat = mock_file_stat();
+
+    my $pane = DoubleDrive::Pane->new(
+        path => $dir,
+        on_status_change => sub {}
+    );
+
+    # State: [../, file1, > file2, file3] (selected_index = 2)
+    $pane->move_selection(2);
+    is $pane->selected_index, 2, 'cursor on file2 at index 2';
+
+    # Delete file1
+    path("$dir/file1")->remove;
+
+    @$texts = ();
+    # Reload directory
+    $pane->reload_directory();
+
+    # Expected: [../, > file2, file3] (selected_index = 1)
+    is $pane->selected_index, 1, 'cursor index updated to 1 after file1 deleted';
+    my @lines = split /\n/, $texts->[-1];
+    is $lines[1], '> file2         0.0B  01/15 10:30', 'cursor still on file2 at new index';
+};
+
+subtest 'reload_directory keeps similar position when cursor file is deleted' => sub {
+    use Path::Tiny qw(path);
+
+    my $dir = temp_dir_with_files('file1', 'file2', 'file3');
+    my ($texts, $mock_widget) = capture_widget_text($test_window);
+    my $mock_stat = mock_file_stat();
+
+    my $pane = DoubleDrive::Pane->new(
+        path => $dir,
+        on_status_change => sub {}
+    );
+
+    # Move to file2 (index 2)
+    $pane->move_selection(2);
+
+    # Delete file2
+    path("$dir/file2")->remove;
+
+    @$texts = ();
+    # Reload directory
+    $pane->reload_directory();
+
+    # Cursor should stay at index 2 (now file3)
+    is $pane->selected_index, 2, 'cursor stayed at index 2';
+    my @lines = split /\n/, $texts->[-1];
+    is $lines[2], '> file3         0.0B  01/15 10:30', 'cursor moved to file3 at same index';
+};
+
 done_testing;
