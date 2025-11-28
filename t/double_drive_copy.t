@@ -3,6 +3,7 @@ use v5.42;
 use Test2::V0;
 use Test2::Tools::Mock qw(mock);
 use Tickit::Test;
+use Tickit::Widget::Static ();
 use POSIX qw(tzset);
 use Path::Tiny qw(path);
 use lib 't/lib';
@@ -210,6 +211,50 @@ subtest 'copy directory recursively' => sub {
     ok -d "$dest_dir/subdir", 'subdir was copied';
     ok -e "$dest_dir/subdir/file1", 'file1 inside subdir was copied';
     ok -e "$dest_dir/subdir/file2", 'file2 inside subdir was copied';
+};
+
+subtest 'copy is skipped when both panes are the same path' => sub {
+    my $dir = temp_dir_with_files('file1');
+
+    my $mock_tickit = mk_tickit;
+    my $mock_tickit_new = mock 'Tickit' => (
+        override => [ new => sub { $mock_tickit } ]
+    );
+
+    my $last_set_text;
+    my $orig_set_text = \&Tickit::Widget::Static::set_text;
+    my $mock_static = mock 'Tickit::Widget::Static' => (
+        override => [
+            set_text => sub {
+                my ($self, $text) = @_;
+                $last_set_text = $text;
+                $orig_set_text->($self, $text);
+            },
+        ],
+    );
+
+    my $app = DoubleDrive->new();
+
+    flush_tickit;
+    drain_termlog;
+
+    my $left = $app->left_pane();
+    my $right = $app->right_pane();
+
+    $left->change_directory(path($dir)->absolute);
+    $right->change_directory(path($dir)->absolute);
+    flush_tickit;
+
+    # Move to file1
+    presskey(text => "Down");
+    flush_tickit;
+
+    # Attempt copy; should be skipped with status message
+    presskey(text => "c");
+    flush_tickit;
+
+    is $last_set_text, 'Copy skipped: source and destination are the same',
+        'copy is skipped when panes share the same path';
 };
 
 done_testing;

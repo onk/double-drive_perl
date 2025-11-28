@@ -114,6 +114,10 @@ class DoubleDrive {
         $active_pane->set_active(true);
     }
 
+    method opposite_pane() {
+        return ($active_pane == $left_pane) ? $right_pane : $left_pane;
+    }
+
     method delete_files() {
         my $files = $active_pane->get_files_to_operate();
         return unless @$files;
@@ -219,8 +223,14 @@ class DoubleDrive {
         return unless @$files;
 
         # Get destination pane (opposite of active pane)
-        my $dest_pane = ($active_pane == $left_pane) ? $right_pane : $left_pane;
+        my $dest_pane = $self->opposite_pane();
         my $dest_path = $dest_pane->current_path;
+
+        # Skip self-copy
+        if ($active_pane->current_path->stringify eq $dest_path->stringify) {
+            $status_bar->set_text("Copy skipped: source and destination are the same");
+            return;
+        }
 
         # Check for existing files in destination
         my $existing = [];
