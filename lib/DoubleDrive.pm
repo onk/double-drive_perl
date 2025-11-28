@@ -55,6 +55,9 @@ class DoubleDrive {
 
         # Trigger initial render after event loop starts and widgets are attached
         $tickit->later(sub {
+            # Disable mouse tracking to allow text selection and copy/paste
+            $tickit->term->setctl_int("mouse", 0);
+
             $left_pane->after_window_attached();
             $right_pane->after_window_attached();
         });
