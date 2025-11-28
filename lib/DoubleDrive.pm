@@ -8,7 +8,7 @@ class DoubleDrive {
     use Tickit::Widget::VBox;
     use Tickit::Widget::Static;
     use DoubleDrive::Pane;
-    use DoubleDrive::ConfirmDialog;
+    use DoubleDrive::DialogFactory;
     use DoubleDrive::FileManipulator;
 
     field $tickit;
@@ -20,6 +20,7 @@ class DoubleDrive {
     field $dialog_open = false;  # Flag to track if dialog is open
     field $normal_keys = {};  # Normal mode key bindings
     field $dialog_keys = {};  # Dialog mode key bindings
+    field $dialog_factory;
 
     ADJUST {
         $self->_build_ui();
@@ -65,6 +66,14 @@ class DoubleDrive {
         $tickit = Tickit->new(root => $float_box);
         $active_pane = $left_pane;
         $left_pane->set_active(true);
+
+        $dialog_factory = DoubleDrive::DialogFactory->new(
+            tickit => $tickit,
+            float_box => $float_box,
+            bind_key => sub ($key, $cb) { $self->dialog_bind_key($key, $cb) },
+            on_open => sub { $dialog_open = true },
+            on_close => sub { $dialog_open = false; $dialog_keys = {} },
+        );
 
         # Trigger initial render after event loop starts and widgets are attached
         $tickit->later(sub {
@@ -131,34 +140,10 @@ class DoubleDrive {
             ? "Delete $file_list?"
             : "Delete $count files ($file_list)?";
 
-        my $dialog;
-        $dialog = DoubleDrive::ConfirmDialog->new(
-            message => $message,
-            tickit => $tickit,
-            float_box => $float_box,
-            on_show => sub {
-                $dialog_open = true;
-                $self->dialog_bind_key('y' => sub { $dialog->confirm() });
-                $self->dialog_bind_key('Y' => sub { $dialog->confirm() });
-                $self->dialog_bind_key('n' => sub { $dialog->cancel() });
-                $self->dialog_bind_key('N' => sub { $dialog->cancel() });
-                $self->dialog_bind_key('Tab' => sub { $dialog->toggle_option() });
-                $self->dialog_bind_key('Enter' => sub { $dialog->execute_selected() });
-                $self->dialog_bind_key('Escape' => sub { $dialog->cancel() });
-            },
-            on_close => sub {
-                $dialog_open = false;
-                $dialog_keys = {};
-            },
-            on_confirm => sub {
-                $self->_perform_delete($files);
-            },
-            on_cancel => sub {
-                # Just restore UI, nothing to do
-            }
+        $dialog_factory->show_confirm(
+            $message,
+            sub { $self->_perform_delete($files) },
         );
-
-        $dialog->show();
     }
 
     method _perform_delete($files) {
@@ -176,29 +161,7 @@ class DoubleDrive {
     }
 
     method _show_error_dialog($message) {
-        my $dialog;
-        $dialog = DoubleDrive::ConfirmDialog->new(
-            message => $message,
-            tickit => $tickit,
-            float_box => $float_box,
-            mode => 'alert',
-            on_show => sub {
-                $dialog_open = true;
-                $self->dialog_bind_key('Enter' => sub { $dialog->confirm() });
-                $self->dialog_bind_key('Escape' => sub { $dialog->cancel() });
-            },
-            on_close => sub {
-                $dialog_open = false;
-                $dialog_keys = {};
-            },
-            on_confirm => sub {
-                # Just close the dialog
-            },
-            on_cancel => sub {
-                # Same as confirm for error dialog
-            }
-        );
-        $dialog->show();
+        $dialog_factory->show_alert($message);
     }
 
     method copy_files() {
@@ -251,34 +214,10 @@ class DoubleDrive {
             $message = "Copy $count files ($file_list)?\n$existing_count file(s) will be overwritten: $existing_list";
         }
 
-        my $dialog;
-        $dialog = DoubleDrive::ConfirmDialog->new(
-            message => $message,
-            tickit => $tickit,
-            float_box => $float_box,
-            on_show => sub {
-                $dialog_open = true;
-                $self->dialog_bind_key('y' => sub { $dialog->confirm() });
-                $self->dialog_bind_key('Y' => sub { $dialog->confirm() });
-                $self->dialog_bind_key('n' => sub { $dialog->cancel() });
-                $self->dialog_bind_key('N' => sub { $dialog->cancel() });
-                $self->dialog_bind_key('Tab' => sub { $dialog->toggle_option() });
-                $self->dialog_bind_key('Enter' => sub { $dialog->execute_selected() });
-                $self->dialog_bind_key('Escape' => sub { $dialog->cancel() });
-            },
-            on_close => sub {
-                $dialog_open = false;
-                $dialog_keys = {};
-            },
-            on_confirm => sub {
-                $self->_perform_copy($files, $dest_path, $dest_pane);
-            },
-            on_cancel => sub {
-                # Just restore UI, nothing to do
-            }
+        $dialog_factory->show_confirm(
+            $message,
+            sub { $self->_perform_copy($files, $dest_path, $dest_pane) },
         );
-
-        $dialog->show();
     }
 
     method _perform_copy($files, $dest_path, $dest_pane) {
