@@ -26,7 +26,10 @@ subtest 'initial render shows parent and sorted files' => sub {
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
 
-    my $pane = DoubleDrive::Pane->new(path => $dir);
+    my $pane = DoubleDrive::Pane->new(
+        path => $dir,
+        on_status_change => sub {}
+    );
     ok @$texts, 'render called on init';
 
     my @lines = split /\n/, $texts->[-1];
@@ -40,7 +43,10 @@ subtest 'selection moves and stops at bounds' => sub {
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
 
-    my $pane = DoubleDrive::Pane->new(path => $dir);
+    my $pane = DoubleDrive::Pane->new(
+        path => $dir,
+        on_status_change => sub {}
+    );
 
     @$texts = ();
     $pane->move_selection(1);
@@ -57,7 +63,10 @@ subtest 'enter_selected descends into directory and resets selection' => sub {
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
 
-    my $pane = DoubleDrive::Pane->new(path => $dir);
+    my $pane = DoubleDrive::Pane->new(
+        path => $dir,
+        on_status_change => sub {}
+    );
     $pane->move_selection(1);    # select subdir
     $pane->enter_selected();
 

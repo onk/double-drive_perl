@@ -14,13 +14,14 @@ class DoubleDrive::Pane {
     use Unicode::GCString;
 
     field $path :param;              # Initial path (string or Path::Tiny object) passed to constructor
+    field $on_status_change :param;
+    field $is_active :param :reader = false;  # :reader for testing
     field $current_path :reader;     # Current directory as Path::Tiny object (:reader for testing)
     field $files = [];
     field $selected_index :reader = 0;  # :reader for testing
     field $scroll_offset = 0;        # First visible item index
     field $widget :reader;
     field $text_widget;
-    field $is_active :reader = false;   # :reader for testing
 
     ADJUST {
         $current_path = path($path);
@@ -158,6 +159,7 @@ class DoubleDrive::Pane {
         if ($new_index >= 0 && $new_index < scalar(@$files)) {
             $selected_index = $new_index;
             $self->_render();
+            $self->_notify_status_change();
         }
     }
 
@@ -171,6 +173,7 @@ class DoubleDrive::Pane {
         $scroll_offset = 0;
         $widget->set_title(NFC($current_path->stringify));
         $self->_load_directory();
+        $self->_notify_status_change();
     }
 
     method enter_selected() {
@@ -185,5 +188,25 @@ class DoubleDrive::Pane {
     method set_active($active) {
         $is_active = $active;
         $widget->set_style(linetype => $is_active ? "double" : "single");
+        $self->_notify_status_change();
+    }
+
+    method _status_text() {
+        my $selected = $files->[$selected_index];
+        my $name = decode_utf8($selected->basename);
+        $name = NFC($name);
+        $name = ".." if $selected eq $current_path->parent;
+        $name .= "/" if $selected->is_dir;
+
+        my $total_files = scalar(@$files);
+        my $position = $selected_index + 1;
+
+        return sprintf("[%d/%d] %s", $position, $total_files, $name);
+    }
+
+    method _notify_status_change() {
+        return unless $is_active;
+        my $status_text = $self->_status_text();
+        $on_status_change->($status_text);
     }
 }

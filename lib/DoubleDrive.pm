@@ -3,6 +3,8 @@ use experimental 'class';
 
 use Tickit;
 use Tickit::Widget::HBox;
+use Tickit::Widget::VBox;
+use Tickit::Widget::Static;
 use DoubleDrive::Pane;
 
 class DoubleDrive {
@@ -10,6 +12,7 @@ class DoubleDrive {
     field $left_pane :reader;    # :reader for testing
     field $right_pane :reader;   # :reader for testing
     field $active_pane :reader;  # :reader for testing
+    field $status_bar;
 
     ADJUST {
         $self->_build_ui();
@@ -17,15 +20,36 @@ class DoubleDrive {
     }
 
     method _build_ui() {
+        # Create vertical box to hold panes and status bar
+        my $vbox = Tickit::Widget::VBox->new;
+
+        # Create horizontal box for dual panes
         my $hbox = Tickit::Widget::HBox->new(spacing => 1);
 
-        $left_pane = DoubleDrive::Pane->new(path => '.');
-        $right_pane = DoubleDrive::Pane->new(path => '.');
+        # Create status bar
+        $status_bar = Tickit::Widget::Static->new(
+            text => "",
+            align => "left",
+        );
+
+        # Create panes with status change callback
+        $left_pane = DoubleDrive::Pane->new(
+            path => '.',
+            on_status_change => sub ($text) { $status_bar->set_text($text) }
+        );
+        $right_pane = DoubleDrive::Pane->new(
+            path => '.',
+            on_status_change => sub ($text) { $status_bar->set_text($text) }
+        );
 
         $hbox->add($left_pane->widget, expand => 1);
         $hbox->add($right_pane->widget, expand => 1);
 
-        $tickit = Tickit->new(root => $hbox);
+        # Add panes and status bar to vertical box
+        $vbox->add($hbox, expand => 1);
+        $vbox->add($status_bar);
+
+        $tickit = Tickit->new(root => $vbox);
         $active_pane = $left_pane;
         $left_pane->set_active(true);
 

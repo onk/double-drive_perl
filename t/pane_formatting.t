@@ -15,7 +15,10 @@ BEGIN {
 }
 
 subtest 'size formatter' => sub {
-    my $pane = DoubleDrive::Pane->new(path => tempdir(CLEANUP => 1));
+    my $pane = DoubleDrive::Pane->new(
+        path => tempdir(CLEANUP => 1),
+        on_status_change => sub {}
+    );
 
     is $pane->_format_size(1023), '1023.0B', 'bytes stay in B';
     is $pane->_format_size(1024), '   1.0K', '1 KiB rounds';
@@ -23,14 +26,20 @@ subtest 'size formatter' => sub {
 };
 
 subtest 'mtime formatter' => sub_at {
-    my $pane = DoubleDrive::Pane->new(path => tempdir(CLEANUP => 1));
+    my $pane = DoubleDrive::Pane->new(
+        path => tempdir(CLEANUP => 1),
+        on_status_change => sub {}
+    );
 
     is $pane->_format_mtime(1_599_999_000), '09/13 12:10', 'within a year shows month/day';
     is $pane->_format_mtime(1_500_000_000), '2017-07-14', 'older than a year shows date';
 } '2020-09-13T12:10:00Z';
 
 subtest 'name formatter width handling' => sub {
-    my $pane = DoubleDrive::Pane->new(path => tempdir(CLEANUP => 1));
+    my $pane = DoubleDrive::Pane->new(
+        path => tempdir(CLEANUP => 1),
+        on_status_change => sub {}
+    );
 
     my $short = $pane->_format_name('abc', 10);
     is $short, 'abc       ', 'short name padded with spaces';
