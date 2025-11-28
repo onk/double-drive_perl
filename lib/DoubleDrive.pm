@@ -1,15 +1,14 @@
 use v5.42;
 use experimental 'class';
 
-use Tickit;
-use Tickit::Widget::FloatBox;
-use Tickit::Widget::HBox;
-use Tickit::Widget::VBox;
-use Tickit::Widget::Static;
-use DoubleDrive::Pane;
-use DoubleDrive::ConfirmDialog;
-
 class DoubleDrive {
+    use Tickit;
+    use Tickit::Widget::FloatBox;
+    use Tickit::Widget::HBox;
+    use Tickit::Widget::VBox;
+    use Tickit::Widget::Static;
+    use DoubleDrive::Pane;
+    use DoubleDrive::ConfirmDialog;
     use File::Copy::Recursive qw(rcopy);
 
     field $tickit;

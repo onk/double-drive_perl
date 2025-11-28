@@ -2,10 +2,9 @@ use v5.42;
 use utf8;
 use experimental 'class';
 
-use Tickit::Widget::Frame;
-use DoubleDrive::TextWidget;
-
 class DoubleDrive::Pane {
+    use Tickit::Widget::Frame;
+    use DoubleDrive::TextWidget;
     use Path::Tiny qw(path);
     use List::Util qw(min);
     use POSIX qw(strftime);

@@ -2,11 +2,10 @@ use v5.42;
 use utf8;
 use experimental 'class';
 
-use Tickit::Widget::Static;
-use Tickit::Widget::VBox;
-use Tickit::Widget::Frame;
-
 class DoubleDrive::ConfirmDialog {
+    use Tickit::Widget::Static;
+    use Tickit::Widget::VBox;
+    use Tickit::Widget::Frame;
     field $message :param;
     field $on_confirm :param;  # Callback for Yes/OK
     field $on_cancel :param;   # Callback for No/Escape
