@@ -7,9 +7,9 @@ use DoubleDrive::Pane;
 
 class DoubleDrive {
     field $tickit;
-    field $left_pane;
-    field $right_pane;
-    field $active_pane;
+    field $left_pane :reader;    # :reader for testing
+    field $right_pane :reader;   # :reader for testing
+    field $active_pane :reader;  # :reader for testing
 
     ADJUST {
         $self->_build_ui();

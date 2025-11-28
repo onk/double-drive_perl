@@ -12,4 +12,6 @@ requires 'Unicode::GCString';
 on develop => sub {
     requires 'Perl::Critic';
     requires 'Perl::Tidy';
+    requires 'Test2::Suite';
+    requires 'Tickit::Test';
 };

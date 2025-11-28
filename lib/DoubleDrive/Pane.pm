@@ -13,14 +13,14 @@ class DoubleDrive::Pane {
     use Unicode::Normalize qw(NFC);
     use Unicode::GCString;
 
-    field $path :param;          # Initial path (string or Path::Tiny object) passed to constructor
-    field $current_path;         # Current directory as Path::Tiny object
+    field $path :param;              # Initial path (string or Path::Tiny object) passed to constructor
+    field $current_path :reader;     # Current directory as Path::Tiny object (:reader for testing)
     field $files = [];
-    field $selected_index = 0;
-    field $scroll_offset = 0;    # First visible item index
+    field $selected_index :reader = 0;  # :reader for testing
+    field $scroll_offset = 0;        # First visible item index
     field $widget :reader;
     field $text_widget;
-    field $is_active = false;
+    field $is_active :reader = false;   # :reader for testing
 
     ADJUST {
         $current_path = path($path);
