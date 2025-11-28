@@ -2,6 +2,7 @@ requires 'File::MimeInfo';
 requires 'Path::Tiny';
 requires 'Term::ReadKey';
 requires 'Tickit';
+requires 'Tickit::Widget::FloatBox';
 requires 'Tickit::Widget::Frame';
 requires 'Tickit::Widget::GridBox';
 requires 'Tickit::Widget::HBox';

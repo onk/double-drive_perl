@@ -2,10 +2,12 @@ use v5.42;
 use experimental 'class';
 
 use Tickit;
+use Tickit::Widget::FloatBox;
 use Tickit::Widget::HBox;
 use Tickit::Widget::VBox;
 use Tickit::Widget::Static;
 use DoubleDrive::Pane;
+use DoubleDrive::ConfirmDialog;
 
 class DoubleDrive {
     field $tickit;
@@ -13,6 +15,10 @@ class DoubleDrive {
     field $right_pane :reader;   # :reader for testing
     field $active_pane :reader;  # :reader for testing
     field $status_bar;
+    field $float_box;  # FloatBox for dialogs
+    field $dialog_open = false;  # Flag to track if dialog is open
+    field $normal_keys = {};  # Normal mode key bindings
+    field $dialog_keys = {};  # Dialog mode key bindings
 
     ADJUST {
         $self->_build_ui();
@@ -20,7 +26,10 @@ class DoubleDrive {
     }
 
     method _build_ui() {
-        # Create vertical box to hold panes and status bar
+        # Create FloatBox for overlaying dialogs
+        $float_box = Tickit::Widget::FloatBox->new;
+
+        # Create main vertical box
         my $vbox = Tickit::Widget::VBox->new;
 
         # Create horizontal box for dual panes
@@ -49,7 +58,10 @@ class DoubleDrive {
         $vbox->add($hbox, expand => 1);
         $vbox->add($status_bar);
 
-        $tickit = Tickit->new(root => $vbox);
+        # Set VBox as base child of FloatBox
+        $float_box->set_base_child($vbox);
+
+        $tickit = Tickit->new(root => $float_box);
         $active_pane = $left_pane;
         $left_pane->set_active(true);
 
@@ -63,13 +75,33 @@ class DoubleDrive {
         });
     }
 
+    method normal_bind_key($key, $callback) {
+        $normal_keys->{$key} = $callback;
+        $self->_setup_key_dispatch($key);
+    }
+
+    method dialog_bind_key($key, $callback) {
+        $dialog_keys->{$key} = $callback;
+        $self->_setup_key_dispatch($key);
+    }
+
+    method _setup_key_dispatch($key) {
+        $tickit->bind_key($key => sub {
+            if ($dialog_open && exists $dialog_keys->{$key}) {
+                $dialog_keys->{$key}->();
+            } elsif (!$dialog_open && exists $normal_keys->{$key}) {
+                $normal_keys->{$key}->();
+            }
+        });
+    }
+
     method _setup_keybindings() {
-        $tickit->bind_key('Down' => sub { $active_pane->move_selection(1) });
-        $tickit->bind_key('Up' => sub { $active_pane->move_selection(-1) });
-        $tickit->bind_key('Enter' => sub { $active_pane->enter_selected() });
-        $tickit->bind_key('Tab' => sub { $self->switch_pane() });
-        $tickit->bind_key('Backspace' => sub { $active_pane->change_directory("..") });
-        $tickit->bind_key(' ' => sub { $active_pane->toggle_selection() });
+        $self->normal_bind_key('Down' => sub { $active_pane->move_selection(1) });
+        $self->normal_bind_key('Up' => sub { $active_pane->move_selection(-1) });
+        $self->normal_bind_key('Enter' => sub { $active_pane->enter_selected() });
+        $self->normal_bind_key('Tab' => sub { $self->switch_pane() });
+        $self->normal_bind_key('Backspace' => sub { $active_pane->change_directory("..") });
+        $self->normal_bind_key(' ' => sub { $active_pane->toggle_selection() });
     }
 
     method switch_pane() {

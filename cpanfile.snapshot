@@ -1172,6 +1172,14 @@ DISTRIBUTIONS
       Term::ReadKey 2.38
     requirements:
       ExtUtils::MakeMaker 6.58
+  Test-Identity-0.01
+    pathname: P/PE/PEVANS/Test-Identity-0.01.tar.gz
+    provides:
+      Test::Identity 0.01
+    requirements:
+      Scalar::Util 0
+      Test::Builder::Tester 0
+      Test::More 0
   Tickit-0.74
     pathname: P/PE/PEVANS/Tickit-0.74.tar.gz
     provides:
@@ -1198,6 +1206,17 @@ DISTRIBUTIONS
       Module::Build::Using::PkgConfig 0
       Struct::Dumb 0.04
       perl 5.014
+  Tickit-Widget-FloatBox-0.11
+    pathname: P/PE/PEVANS/Tickit-Widget-FloatBox-0.11.tar.gz
+    provides:
+      Tickit::Widget::FloatBox 0.11
+    requirements:
+      Object::Pad 0.74
+      Test::Identity 0
+      Test::More 0.88
+      Tickit::ContainerWidget 0
+      Tickit::Test 0
+      perl 5.026
   Tickit-Widget-Scroller-0.33
     pathname: P/PE/PEVANS/Tickit-Widget-Scroller-0.33.tar.gz
     provides:
