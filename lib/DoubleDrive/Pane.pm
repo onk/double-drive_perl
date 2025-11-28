@@ -20,6 +20,7 @@ class DoubleDrive::Pane {
     field $files = [];
     field $selected_index :reader = 0;  # :reader for testing
     field $scroll_offset = 0;        # First visible item index
+    field $selected_files = {};      # Hash of selected file paths (stringified path as key)
     field $widget :reader;
     field $text_widget;
 
@@ -44,6 +45,9 @@ class DoubleDrive::Pane {
 
         # Add parent directory at the beginning (unless we're at root)
         unshift @$files, $current_path->parent if $current_path->parent ne $current_path;
+
+        # Clear selection when loading a new directory
+        $selected_files = {};
 
         $self->_render();
     }
@@ -85,7 +89,11 @@ class DoubleDrive::Pane {
             $name = ".." if $file eq $current_path->parent;
             $name .= "/" if $file->is_dir;
 
-            my $selected = ($index == $selected_index) ? "> " : "  ";
+            my $is_selected_file = exists $selected_files->{$file->stringify};
+            my $is_cursor = ($index == $selected_index);
+            my $selected = $is_selected_file
+                ? ($is_cursor ? ">*" : " *")
+                : ($is_cursor ? "> " : "  ");
 
             # Get file stats
             my $stat = $file->stat;
@@ -200,13 +208,44 @@ class DoubleDrive::Pane {
 
         my $total_files = scalar(@$files);
         my $position = $selected_index + 1;
+        my $selected_count = scalar(keys %$selected_files);
 
-        return sprintf("[%d/%d] %s", $position, $total_files, $name);
+        if ($selected_count > 0) {
+            return sprintf("[%d/%d] (%d selected) %s", $position, $total_files, $selected_count, $name);
+        } else {
+            return sprintf("[%d/%d] %s", $position, $total_files, $name);
+        }
     }
 
     method _notify_status_change() {
         return unless $is_active;
         my $status_text = $self->_status_text();
         $on_status_change->($status_text);
+    }
+
+    method toggle_selection() {
+        my $file = $files->[$selected_index];
+        my $key = $file->stringify;
+
+        if (exists $selected_files->{$key}) {
+            delete $selected_files->{$key};
+        } else {
+            $selected_files->{$key} = 1;
+        }
+
+        # Render to show selection change
+        $self->_render();
+
+        # Move cursor down after toggling selection for easy multi-selection
+        $self->move_selection(1);
+    }
+
+    method get_files_to_operate() {
+        # Return selected files if any exist, otherwise return current file
+        if (keys %$selected_files) {
+            return [grep { exists $selected_files->{$_->stringify} } @$files];
+        } else {
+            return [$files->[$selected_index]];
+        }
     }
 }
