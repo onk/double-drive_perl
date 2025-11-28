@@ -219,6 +219,12 @@ class DoubleDrive {
             return;
         }
 
+        # Prevent copying a directory into its own descendant (would recurse forever)
+        if (DoubleDrive::FileManipulator->copy_into_self($files, $dest_path)) {
+            $status_bar->set_text("Copy skipped: destination is inside source");
+            return;
+        }
+
         # Check for existing files in destination
         my $existing = [];
         for my $file (@$files) {

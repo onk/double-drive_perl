@@ -257,4 +257,46 @@ subtest 'copy is skipped when both panes are the same path' => sub {
         'copy is skipped when panes share the same path';
 };
 
+subtest 'copy is skipped when destination is inside source' => sub {
+    my $dir = temp_dir_with_files('foo/sub/file1');
+
+    my $mock_tickit = mk_tickit;
+    my $mock_tickit_new = mock 'Tickit' => (
+        override => [ new => sub { $mock_tickit } ]
+    );
+
+    my $last_set_text;
+    my $mock_static = mock 'Tickit::Widget::Static' => (
+        around => [
+            set_text => sub ($orig, $self, $text) {
+                $last_set_text = $text;
+                return $orig->($self, $text);
+            },
+        ],
+    );
+
+    my $app = DoubleDrive->new();
+
+    flush_tickit;
+    drain_termlog;
+
+    my $left = $app->left_pane();
+    my $right = $app->right_pane();
+
+    $left->change_directory(path($dir));
+    $right->change_directory(path($dir, 'foo', 'sub'));
+    flush_tickit;
+
+    # Move to foo directory in left pane (.. is index 0)
+    presskey(text => "Down");
+    flush_tickit;
+
+    # Attempt copy; should be skipped with status message
+    presskey(text => "c");
+    flush_tickit;
+
+    is $last_set_text, 'Copy skipped: destination is inside source',
+        'copy is skipped when destination lies inside source';
+};
+
 done_testing;

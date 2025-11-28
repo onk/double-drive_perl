@@ -24,6 +24,28 @@ subtest 'copy_files copies files and directories' => sub {
     ok -e path($dest_dir, 'dir1/file2'), 'file inside directory copied';
 };
 
+subtest 'copy_into_self detects descendant and equal destinations' => sub {
+    my $dir = temp_dir_with_files('foo/sub/file1', 'bar/file2');
+
+    my $is_inside = DoubleDrive::FileManipulator->copy_into_self(
+        [ path($dir, 'foo') ],
+        path($dir, 'foo', 'sub'),
+    );
+    ok $is_inside, 'descendant detected';
+
+    $is_inside = DoubleDrive::FileManipulator->copy_into_self(
+        [ path($dir, 'foo') ],
+        path($dir, 'foo'),
+    );
+    ok $is_inside, 'equal path detected';
+
+    $is_inside = DoubleDrive::FileManipulator->copy_into_self(
+        [ path($dir, 'bar') ],
+        path($dir, 'foo'),
+    );
+    ok !$is_inside, 'unrelated paths allowed';
+};
+
 subtest 'copy_files reports failure and continues' => sub {
     my $src_dir = temp_dir_with_files('file1', 'file2');
     my $dest_dir = temp_dir_with_files();

@@ -4,6 +4,26 @@ use experimental 'class';
 class DoubleDrive::FileManipulator {
     use File::Copy::Recursive qw(rcopy);
 
+    sub copy_into_self ($class, $files, $dest_path) {
+        my $dest_abs = $dest_path->realpath;
+        my $dest_str = $dest_abs->stringify;
+
+        for my $file (@$files) {
+            next unless $file->is_dir;
+            my $src_abs = $file->realpath;
+            my $src_str = $src_abs->stringify;
+            next unless index($dest_str, $src_str) == 0;
+
+            # Boundary check so /foo does not match /foobar
+            my $next_char = substr($dest_str, length($src_str), 1);
+            if ($next_char eq '' || $next_char eq '/') {
+                return true;  # destination is inside or equal to source
+            }
+        }
+
+        return false;
+    }
+
     sub copy_files ($class, $files, $dest_path) {
         my $failed = [];
 
