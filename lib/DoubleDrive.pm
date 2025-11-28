@@ -10,6 +10,8 @@ use DoubleDrive::Pane;
 use DoubleDrive::ConfirmDialog;
 
 class DoubleDrive {
+    use File::Copy::Recursive qw(rcopy);
+
     field $tickit;
     field $left_pane :reader;    # :reader for testing
     field $right_pane :reader;   # :reader for testing
@@ -103,6 +105,7 @@ class DoubleDrive {
         $self->normal_bind_key('Backspace' => sub { $active_pane->change_directory("..") });
         $self->normal_bind_key(' ' => sub { $active_pane->toggle_selection() });
         $self->normal_bind_key('d' => sub { $self->delete_files() });
+        $self->normal_bind_key('c' => sub { $self->copy_files() });
     }
 
     method switch_pane() {
@@ -205,6 +208,103 @@ class DoubleDrive {
             }
         );
         $dialog->show();
+    }
+
+    method copy_files() {
+        my $files = $active_pane->get_files_to_operate();
+        return unless @$files;
+
+        # Skip parent directory
+        $files = [grep { $_ ne $active_pane->current_path->parent } @$files];
+        return unless @$files;
+
+        # Get destination pane (opposite of active pane)
+        my $dest_pane = ($active_pane == $left_pane) ? $right_pane : $left_pane;
+        my $dest_path = $dest_pane->current_path;
+
+        # Check for existing files in destination
+        my $existing = [];
+        for my $file (@$files) {
+            my $dest_file = $dest_path->child($file->basename);
+            push @$existing, $file->basename if $dest_file->exists;
+        }
+
+        # If no files will be overwritten, copy directly without confirmation
+        if (!@$existing) {
+            $self->_perform_copy($files, $dest_path, $dest_pane);
+            return;
+        }
+
+        # Show confirmation dialog only when overwriting
+        my $count = scalar(@$files);
+        my $file_list = join(", ", map { $_->basename } @$files);
+        my $existing_list = join(", ", @$existing);
+        my $message;
+
+        if ($count == 1) {
+            $message = "Overwrite $existing_list?";
+        } else {
+            my $existing_count = scalar(@$existing);
+            $message = "Copy $count files ($file_list)?\n$existing_count file(s) will be overwritten: $existing_list";
+        }
+
+        my $dialog;
+        $dialog = DoubleDrive::ConfirmDialog->new(
+            message => $message,
+            tickit => $tickit,
+            float_box => $float_box,
+            on_show => sub {
+                $dialog_open = true;
+                $self->dialog_bind_key('y' => sub { $dialog->confirm() });
+                $self->dialog_bind_key('Y' => sub { $dialog->confirm() });
+                $self->dialog_bind_key('n' => sub { $dialog->cancel() });
+                $self->dialog_bind_key('N' => sub { $dialog->cancel() });
+                $self->dialog_bind_key('Tab' => sub { $dialog->toggle_option() });
+                $self->dialog_bind_key('Enter' => sub { $dialog->execute_selected() });
+                $self->dialog_bind_key('Escape' => sub { $dialog->cancel() });
+            },
+            on_close => sub {
+                $dialog_open = false;
+                $dialog_keys = {};
+            },
+            on_confirm => sub {
+                $self->_perform_copy($files, $dest_path, $dest_pane);
+            },
+            on_cancel => sub {
+                # Just restore UI, nothing to do
+            }
+        );
+
+        $dialog->show();
+    }
+
+    method _perform_copy($files, $dest_path, $dest_pane) {
+        my $failed = [];
+
+        for my $file (@$files) {
+            try {
+                my $dest_file = $dest_path->child($file->basename);
+                if ($file->is_dir) {
+                    # For directories, use recursive copy
+                    rcopy($file->stringify, $dest_file->stringify)
+                        or die "rcopy failed: $!";
+                } else {
+                    $file->copy($dest_file);
+                }
+            } catch ($e) {
+                push @$failed, { file => $file->basename, error => $e };
+            }
+        }
+
+        # Reload destination pane directory
+        $dest_pane->reload_directory();
+
+        # Show error dialog if any copies failed
+        if (@$failed) {
+            my $error_msg = "Failed to copy:\n" .
+                join("\n", map { "- $_->{file}: $_->{error}" } @$failed);
+            $self->_show_error_dialog($error_msg);
+        }
     }
 
     method run() {

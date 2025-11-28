@@ -1,3 +1,4 @@
+requires 'File::Copy::Recursive';
 requires 'File::MimeInfo';
 requires 'Path::Tiny';
 requires 'Term::ReadKey';
