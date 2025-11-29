@@ -2,65 +2,14 @@ use v5.42;
 use utf8;
 use experimental 'class';
 
-class DoubleDrive::ConfirmDialog {
-    use Tickit::Widget::Static;
-    use Tickit::Widget::VBox;
-    use Tickit::Widget::Frame;
-    use Text::Wrap qw(wrap);
-    use List::Util qw(min max);
-    field $message :param;
-    field $title :param = 'Confirm';
+class DoubleDrive::ConfirmDialog :isa(DoubleDrive::Dialog::Base) {
+    use DoubleDrive::Dialog::Base;
+
     field $on_confirm :param;  # Callback for Yes/OK
-    field $on_cancel :param;   # Callback for No/Escape
-    field $on_show :param;     # Callback when dialog is shown
-    field $on_close :param;    # Callback when dialog is closed
-    field $tickit :param;
-    field $float_box :param;  # FloatBox widget
-    field $mode :param = 'confirm';  # 'confirm' (Yes/No) or 'alert' (OK only)
-    field $dialog_widget;
-    field $float;  # Float object returned by add_float
-    field $selected_option = 'yes';  # 'yes' or 'no' (for confirm mode)
-    field $instruction_widget;  # Widget to update when selection changes
+    field $on_cancel :param = sub {};   # Callback for No/Escape
+    field $selected_option = 'yes';  # 'yes' or 'no'
 
-    ADJUST {
-        $self->_build_widget();
-    }
-
-    method _build_widget() {
-        my $vbox = Tickit::Widget::VBox->new;
-        my (undef, $cols) = $tickit->term->get_size;
-        my $wrap_width = $cols ? $cols - 44 : 80;   # align with FloatBox margins (left/right ~20 each) and frame
-        my $max_width  = $cols ? $cols - 4 : 120;   # leave a small border gap
-        $wrap_width = max(30, min($wrap_width, $max_width));  # clamp to a sensible range
-        local $Text::Wrap::columns = $wrap_width;
-        my $wrapped_message = wrap("", "", $message);
-
-        # Message
-        my $msg_widget = Tickit::Widget::Static->new(
-            text => $wrapped_message,
-            align => "left",
-        );
-
-        # Instruction
-        $instruction_widget = Tickit::Widget::Static->new(
-            text => $self->_format_options(),
-            align => "left",
-        );
-
-        $vbox->add($msg_widget, expand => 1);
-        $vbox->add($instruction_widget);
-
-        $dialog_widget = Tickit::Widget::Frame->new(
-            style => { linetype => "double" },
-            title => $title,
-        )->set_child($vbox);
-    }
-
-    method _format_options() {
-        if ($mode eq 'alert') {
-            return "Press Enter or Escape to close";
-        }
-
+    method _instruction_text() {
         if ($selected_option eq 'yes') {
             return "> [Y]es   [N]o";
         } else {
@@ -68,30 +17,23 @@ class DoubleDrive::ConfirmDialog {
         }
     }
 
-    method show() {
-        # Notify that dialog is being shown
-        $on_show->();
-
-        # Add dialog to float box (more centered)
-        $float = $float_box->add_float(
-            child => $dialog_widget,
-            top => 8,
-            left => 20,
-            right => -20,
-        );
+    method _bind_keys() {
+        $self->key_dispatcher->bind_dialog('y' => sub { $self->confirm() });
+        $self->key_dispatcher->bind_dialog('Y' => sub { $self->confirm() });
+        $self->key_dispatcher->bind_dialog('n' => sub { $self->cancel() });
+        $self->key_dispatcher->bind_dialog('N' => sub { $self->cancel() });
+        $self->key_dispatcher->bind_dialog('Tab' => sub { $self->toggle_option() });
+        $self->key_dispatcher->bind_dialog('Enter' => sub { $self->execute_selected() });
+        $self->key_dispatcher->bind_dialog('Escape' => sub { $self->cancel() });
     }
 
     method toggle_option() {
-        return if $mode eq 'alert';  # No toggle in alert mode
-
         $selected_option = ($selected_option eq 'yes') ? 'no' : 'yes';
-        $instruction_widget->set_text($self->_format_options());
+        $self->_update_instruction();
     }
 
     method execute_selected() {
-        if ($mode eq 'alert') {
-            $self->confirm();  # Always confirm in alert mode
-        } elsif ($selected_option eq 'yes') {
+        if ($selected_option eq 'yes') {
             $self->confirm();
         } else {
             $self->cancel();
@@ -106,13 +48,5 @@ class DoubleDrive::ConfirmDialog {
     method cancel() {
         $self->close();
         $on_cancel->();
-    }
-
-    method close() {
-        # Remove dialog from float box
-        $float->remove if $float;
-
-        # Notify that dialog is closed
-        $on_close->();
     }
 }

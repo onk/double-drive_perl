@@ -8,7 +8,8 @@ class DoubleDrive {
     use Tickit::Widget::VBox;
     use Tickit::Widget::Static;
     use DoubleDrive::Pane;
-    use DoubleDrive::DialogFactory;
+    use DoubleDrive::ConfirmDialog;
+    use DoubleDrive::AlertDialog;
     use DoubleDrive::KeyDispatcher;
     use DoubleDrive::FileManipulator;
 
@@ -18,7 +19,6 @@ class DoubleDrive {
     field $active_pane :reader;  # :reader for testing
     field $status_bar;
     field $float_box;  # FloatBox for dialogs
-    field $dialog_factory;
     field $key_dispatcher;
 
     ADJUST {
@@ -67,11 +67,6 @@ class DoubleDrive {
         $left_pane->set_active(true);
 
         $key_dispatcher = DoubleDrive::KeyDispatcher->new(tickit => $tickit);
-        $dialog_factory = DoubleDrive::DialogFactory->new(
-            tickit => $tickit,
-            float_box => $float_box,
-            key_dispatcher => $key_dispatcher,
-        );
 
         # Trigger initial render after event loop starts and widgets are attached
         $tickit->later(sub {
@@ -118,10 +113,14 @@ class DoubleDrive {
             ? "Delete $file_list?"
             : "Delete $count files ($file_list)?";
 
-        $dialog_factory->show_confirm(
-            $message,
-            sub { $self->_perform_delete($files) },
-        );
+        DoubleDrive::ConfirmDialog->new(
+            tickit => $tickit,
+            float_box => $float_box,
+            key_dispatcher => $key_dispatcher,
+            title => 'Confirm',
+            message => $message,
+            on_confirm => sub { $self->_perform_delete($files) },
+        )->show();
     }
 
     method _perform_delete($files) {
@@ -134,7 +133,13 @@ class DoubleDrive {
         if (@$failed) {
             my $error_msg = "Failed to delete:\n" .
                 join("\n", map { "- $_->{file}: $_->{error}" } @$failed);
-            $dialog_factory->show_alert('Error', $error_msg);
+            DoubleDrive::AlertDialog->new(
+                tickit => $tickit,
+                float_box => $float_box,
+                key_dispatcher => $key_dispatcher,
+                title => 'Error',
+                message => $error_msg,
+            )->show();
         }
     }
 
@@ -184,10 +189,14 @@ class DoubleDrive {
             $message = "Copy $count files ($file_list)?\n$existing_count file(s) will be overwritten: $existing_list";
         }
 
-        $dialog_factory->show_confirm(
-            $message,
-            sub { $self->_perform_copy($files, $dest_path, $dest_pane) },
-        );
+        DoubleDrive::ConfirmDialog->new(
+            tickit => $tickit,
+            float_box => $float_box,
+            key_dispatcher => $key_dispatcher,
+            title => 'Confirm',
+            message => $message,
+            on_confirm => sub { $self->_perform_copy($files, $dest_path, $dest_pane) },
+        )->show();
     }
 
     method _perform_copy($files, $dest_path, $dest_pane) {
@@ -200,7 +209,13 @@ class DoubleDrive {
         if (@$failed) {
             my $error_msg = "Failed to copy:\n" .
                 join("\n", map { "- $_->{file}: $_->{error}" } @$failed);
-            $dialog_factory->show_alert('Error', $error_msg);
+            DoubleDrive::AlertDialog->new(
+                tickit => $tickit,
+                float_box => $float_box,
+                key_dispatcher => $key_dispatcher,
+                title => 'Error',
+                message => $error_msg,
+            )->show();
         }
     }
 
