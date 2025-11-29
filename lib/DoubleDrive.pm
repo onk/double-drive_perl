@@ -9,6 +9,7 @@ class DoubleDrive {
     use Tickit::Widget::Static;
     use DoubleDrive::Pane;
     use DoubleDrive::DialogFactory;
+    use DoubleDrive::KeyDispatcher;
     use DoubleDrive::FileManipulator;
 
     field $tickit;
@@ -17,10 +18,8 @@ class DoubleDrive {
     field $active_pane :reader;  # :reader for testing
     field $status_bar;
     field $float_box;  # FloatBox for dialogs
-    field $dialog_open = false;  # Flag to track if dialog is open
-    field $normal_keys = {};  # Normal mode key bindings
-    field $dialog_keys = {};  # Dialog mode key bindings
     field $dialog_factory;
+    field $key_dispatcher;
 
     ADJUST {
         $self->_build_ui();
@@ -67,12 +66,11 @@ class DoubleDrive {
         $active_pane = $left_pane;
         $left_pane->set_active(true);
 
+        $key_dispatcher = DoubleDrive::KeyDispatcher->new(tickit => $tickit);
         $dialog_factory = DoubleDrive::DialogFactory->new(
             tickit => $tickit,
             float_box => $float_box,
-            bind_key => sub ($key, $cb) { $self->dialog_bind_key($key, $cb) },
-            on_open => sub { $dialog_open = true },
-            on_close => sub { $dialog_open = false; $dialog_keys = {} },
+            key_dispatcher => $key_dispatcher,
         );
 
         # Trigger initial render after event loop starts and widgets are attached
@@ -85,35 +83,15 @@ class DoubleDrive {
         });
     }
 
-    method normal_bind_key($key, $callback) {
-        $normal_keys->{$key} = $callback;
-        $self->_setup_key_dispatch($key);
-    }
-
-    method dialog_bind_key($key, $callback) {
-        $dialog_keys->{$key} = $callback;
-        $self->_setup_key_dispatch($key);
-    }
-
-    method _setup_key_dispatch($key) {
-        $tickit->bind_key($key => sub {
-            if ($dialog_open && exists $dialog_keys->{$key}) {
-                $dialog_keys->{$key}->();
-            } elsif (!$dialog_open && exists $normal_keys->{$key}) {
-                $normal_keys->{$key}->();
-            }
-        });
-    }
-
     method _setup_keybindings() {
-        $self->normal_bind_key('Down' => sub { $active_pane->move_selection(1) });
-        $self->normal_bind_key('Up' => sub { $active_pane->move_selection(-1) });
-        $self->normal_bind_key('Enter' => sub { $active_pane->enter_selected() });
-        $self->normal_bind_key('Tab' => sub { $self->switch_pane() });
-        $self->normal_bind_key('Backspace' => sub { $active_pane->change_directory("..") });
-        $self->normal_bind_key(' ' => sub { $active_pane->toggle_selection() });
-        $self->normal_bind_key('d' => sub { $self->delete_files() });
-        $self->normal_bind_key('c' => sub { $self->copy_files() });
+        $key_dispatcher->bind_normal('Down' => sub { $active_pane->move_selection(1) });
+        $key_dispatcher->bind_normal('Up' => sub { $active_pane->move_selection(-1) });
+        $key_dispatcher->bind_normal('Enter' => sub { $active_pane->enter_selected() });
+        $key_dispatcher->bind_normal('Tab' => sub { $self->switch_pane() });
+        $key_dispatcher->bind_normal('Backspace' => sub { $active_pane->change_directory("..") });
+        $key_dispatcher->bind_normal(' ' => sub { $active_pane->toggle_selection() });
+        $key_dispatcher->bind_normal('d' => sub { $self->delete_files() });
+        $key_dispatcher->bind_normal('c' => sub { $self->copy_files() });
     }
 
     method switch_pane() {
