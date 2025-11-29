@@ -171,6 +171,8 @@ class DoubleDrive::Pane {
     }
 
     method change_directory($new_path) {
+        my $previous_path = $current_path;
+
         # Handle both string paths and Path::Tiny objects
         my $path_obj = $new_path isa Path::Tiny
             ? $new_path
@@ -180,6 +182,24 @@ class DoubleDrive::Pane {
         $scroll_offset = 0;
         $widget->set_title(display_name($current_path->stringify));
         $self->_load_directory();
+
+        # When explicitly moving to parent (".."), select the directory we came from if it exists
+        if (!($new_path isa Path::Tiny) && $new_path eq "..") {
+            if (@$files) {
+                my $new_index;
+                for my ($i, $file) (indexed @$files) {
+                    if ($file->stringify eq $previous_path->stringify) {
+                        $new_index = $i;
+                        last;
+                    }
+                }
+                if (defined $new_index) {
+                    $selected_index = $new_index;
+                    $self->_render();
+                }
+            }
+        }
+
         $self->_notify_status_change();
     }
 

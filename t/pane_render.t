@@ -68,6 +68,30 @@ subtest 'selection moves and stops at bounds' => sub {
     is scalar(@$texts), 1, 'no extra render when selection would go out of bounds';
 };
 
+subtest 'change_directory to parent reselects previous directory entry' => sub {
+    my $dir = temp_dir_with_files('a_dir/file', 'subdir/file');
+    my ($texts, $mock_widget) = capture_widget_text($test_window);
+    my $mock_stat = mock_file_stat();
+
+    my $pane = DoubleDrive::Pane->new(
+        path => $dir,
+        on_status_change => sub {}
+    );
+
+    # Move to subdir (index 1) and enter it
+    $pane->move_selection(1);
+    @$texts = ();
+    $pane->enter_selected();
+
+    # Go back to parent; should select the directory we came from (subdir)
+    @$texts = ();
+    $pane->change_directory("..");
+
+    my @lines = split /\n/, $texts->[-1];
+    like $lines[1], qr/^> subdir\/\s+0\.0B\s+01\/15 10:30$/, 'parent view selects previous directory';
+    is $pane->selected_index, 1, 'cursor on previous directory entry';
+};
+
 subtest 'enter_selected descends into directory and resets selection' => sub {
     my $dir = temp_dir_with_files('file_before', 'sub/file1', 'sub/file2');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
