@@ -37,6 +37,17 @@ subtest 'initial render shows sorted files' => sub {
     is $lines[1], '  B             0.0B  01/15 10:30', 'B is second';
 };
 
+subtest 'empty directory shows placeholder' => sub {
+    my $dir = temp_dir_with_files();  # empty
+    my ($texts, $mock_widget) = capture_widget_text($test_window);
+    my $pane = DoubleDrive::Pane->new(
+        path => $dir,
+        on_status_change => sub {}
+    );
+    ok @$texts, 'render called on init for empty dir';
+    is $texts->[-1], '(empty directory)', 'placeholder text rendered for empty dir';
+};
+
 subtest 'selection moves and stops at bounds' => sub {
     my $dir = temp_dir_with_files('file', 'file2');
     my ($texts, $mock_widget) = capture_widget_text($test_window);

@@ -57,7 +57,7 @@ class DoubleDrive::Pane {
         return unless $window;
 
         if (!@$files) {
-            $text_widget->set_text("");
+            $text_widget->set_text("(empty directory)");
             return;
         }
 
