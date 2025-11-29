@@ -7,7 +7,7 @@ class DoubleDrive {
     use Tickit::Widget::HBox;
     use Tickit::Widget::VBox;
     use Tickit::Widget::Static;
-    use Encode qw(decode_utf8);
+    use DoubleDrive::TextUtil qw(display_name);
     use DoubleDrive::Pane;
     use DoubleDrive::ConfirmDialog;
     use DoubleDrive::AlertDialog;
@@ -109,7 +109,7 @@ class DoubleDrive {
         return unless @$files;
 
         my $count = scalar(@$files);
-        my $file_list = join(", ", map { decode_utf8($_->basename) } @$files);
+        my $file_list = join(", ", map { display_name($_->basename) } @$files);
         my $message = $count == 1
             ? "Delete $file_list?"
             : "Delete $count files ($file_list)?";
@@ -133,7 +133,7 @@ class DoubleDrive {
         # Show error dialog if any deletions failed
         if (@$failed) {
             my $error_msg = "Failed to delete:\n" .
-                join("\n", map { "- " . decode_utf8($_->{file}) . ": $_->{error}" } @$failed);
+                join("\n", map { "- " . display_name($_->{file}) . ": $_->{error}" } @$failed);
             DoubleDrive::AlertDialog->new(
                 tickit => $tickit,
                 float_box => $float_box,
@@ -179,8 +179,8 @@ class DoubleDrive {
 
         # Show confirmation dialog only when overwriting
         my $count = scalar(@$files);
-        my $file_list = join(", ", map { decode_utf8($_->basename) } @$files);
-        my $existing_list = join(", ", map { decode_utf8($_) } @$existing);
+        my $file_list = join(", ", map { display_name($_->basename) } @$files);
+        my $existing_list = join(", ", map { display_name($_) } @$existing);
         my $message;
 
         if ($count == 1) {
