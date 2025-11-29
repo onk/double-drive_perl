@@ -9,6 +9,8 @@ class DoubleDrive::FileManipulator {
         my $dest_str = $dest_abs->stringify;
 
         for my $file (@$files) {
+            my $file_str = $file->stringify;
+            next if -l $file_str;  # treat symlinks as files, not directories
             next unless $file->is_dir;
             my $src_abs = $file->realpath;
             my $src_str = $src_abs->stringify;
@@ -30,7 +32,21 @@ class DoubleDrive::FileManipulator {
         for my $file (@$files) {
             try {
                 my $dest_file = $dest_path->child($file->basename);
-                if ($file->is_dir) {
+                my $file_str = $file->stringify;
+                my $dest_str = $dest_file->stringify;
+
+                if (-l $file_str) {
+                    my $target = readlink $file_str;
+                    die "readlink failed: $!" unless defined $target;
+
+                    # Replace existing non-directory destinations when overwriting symlinks
+                    if (-l $dest_str || (-e $dest_str && !-d $dest_str)) {
+                        $dest_file->remove;
+                    }
+
+                    symlink $target, $dest_str
+                        or die "symlink failed: $!";
+                } elsif ($file->is_dir) {
                     rcopy($file->stringify, $dest_file->stringify)
                         or die "rcopy failed: $!";
                 } else {
@@ -49,7 +65,9 @@ class DoubleDrive::FileManipulator {
 
         for my $file (@$files) {
             try {
-                if ($file->is_dir) {
+                if (-l $file->stringify) {
+                    $file->remove;
+                } elsif ($file->is_dir) {
                     $file->remove_tree;
                 } else {
                     $file->remove;
