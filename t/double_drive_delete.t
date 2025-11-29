@@ -33,10 +33,8 @@ subtest 'delete current file with confirmation' => sub {
     $left->change_directory(path($dir));
     flush_tickit;
 
-    # Move to file1
-    presskey(text => "Down");
-    flush_tickit;
-    is $left->selected_index, 1, 'cursor on file1';
+    # Cursor starts on file1 (index 0)
+    is $left->selected_index, 0, 'cursor on file1';
 
     # Press 'd' to delete
     presskey(text => "d");
@@ -69,10 +67,6 @@ subtest 'cancel delete operation' => sub {
     $left->change_directory(path($dir));
     flush_tickit;
 
-    # Move to file1
-    presskey(text => "Down");
-    flush_tickit;
-
     # Press 'd' to delete
     presskey(text => "d");
     flush_tickit;
@@ -103,10 +97,8 @@ subtest 'delete multiple selected files' => sub {
     $left->change_directory(path($dir));
     flush_tickit;
 
-    # Move to file1 and select it
-    presskey(text => "Down");
-    flush_tickit;
-    presskey(text => " ");  # Space to select
+    # Select file1
+    presskey(text => " ");  # Space to select (cursor on file1)
     flush_tickit;
 
     # Select file2 as well (cursor moved to file2 after space)

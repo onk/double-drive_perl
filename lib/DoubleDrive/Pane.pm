@@ -41,9 +41,6 @@ class DoubleDrive::Pane {
         # Get all entries and sort alphabetically (case-insensitive)
         $files = [sort { fc($a->basename) cmp fc($b->basename) } $current_path->children];
 
-        # Add parent directory at the beginning (unless we're at root)
-        unshift @$files, $current_path->parent if $current_path->parent ne $current_path;
-
         # Clear selection when loading a new directory
         $selected_files = {};
 
@@ -87,7 +84,6 @@ class DoubleDrive::Pane {
         for my $index ($scroll_offset .. $end_index) {
             my $file = $files->[$index];
             my $name = display_name($file->basename);
-            $name = ".." if $file eq $current_path->parent;
             $name .= "/" if $file->is_dir;
 
             my $is_selected_file = exists $selected_files->{$file->stringify};
@@ -207,7 +203,6 @@ class DoubleDrive::Pane {
 
         my $selected = $files->[$selected_index];
         my $name = display_name($selected->basename);
-        $name = ".." if $selected eq $current_path->parent;
         $name .= "/" if $selected->is_dir;
 
         my $position = $selected_index + 1;
@@ -266,6 +261,7 @@ class DoubleDrive::Pane {
             # Try to find the same file in the reloaded list
             my $new_index;
             for my ($i, $file) (indexed @$files) {
+                next unless defined $current_file_path;
                 if ($file->stringify eq $current_file_path) {
                     $new_index = $i;
                     last;

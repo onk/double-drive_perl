@@ -21,7 +21,7 @@ BEGIN {
 
 my (undef, $test_window) = mk_term_and_window(lines => 5, cols => 24);
 
-subtest 'initial render shows parent and sorted files' => sub {
+subtest 'initial render shows sorted files' => sub {
     my $dir = temp_dir_with_files('B', 'a');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
@@ -33,13 +33,12 @@ subtest 'initial render shows parent and sorted files' => sub {
     ok @$texts, 'render called on init';
 
     my @lines = split /\n/, $texts->[-1];
-    is $lines[0], '> ../           0.0B  01/15 10:30', 'parent selected first';
-    is $lines[1], '  a             0.0B  01/15 10:30', 'a is second';
-    is $lines[2], '  B             0.0B  01/15 10:30', 'B is third';
+    is $lines[0], '> a             0.0B  01/15 10:30', 'a is first';
+    is $lines[1], '  B             0.0B  01/15 10:30', 'B is second';
 };
 
 subtest 'selection moves and stops at bounds' => sub {
-    my $dir = temp_dir_with_files('file');
+    my $dir = temp_dir_with_files('file', 'file2');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
 
@@ -51,15 +50,15 @@ subtest 'selection moves and stops at bounds' => sub {
     @$texts = ();
     $pane->move_selection(1);
     my @lines = split /\n/, $texts->[-1];
-    is $lines[0], '  ../           0.0B  01/15 10:30', 'parent now unselected';
-    is $lines[1], '> file          0.0B  01/15 10:30', 'file is selected';
+    is $lines[0], '  file          0.0B  01/15 10:30', 'first file now unselected';
+    is $lines[1], '> file2         0.0B  01/15 10:30', 'second file is selected';
 
     $pane->move_selection(10); # out of range
     is scalar(@$texts), 1, 'no extra render when selection would go out of bounds';
 };
 
 subtest 'enter_selected descends into directory and resets selection' => sub {
-    my $dir = temp_dir_with_files('sub/file1', 'sub/file2');
+    my $dir = temp_dir_with_files('file_before', 'sub/file1', 'sub/file2');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
 
@@ -67,17 +66,16 @@ subtest 'enter_selected descends into directory and resets selection' => sub {
         path => $dir,
         on_status_change => sub {}
     );
-    $pane->move_selection(1);    # select subdir
+    $pane->move_selection(1);    # select subdir (file_before is index 0)
     $pane->enter_selected();
 
     my @lines = split /\n/, $texts->[-1];
-    is $lines[0], '> ../           0.0B  01/15 10:30', 'selection reset to parent';
-    is $lines[1], '  file1         0.0B  01/15 10:30', 'file1 in subdirectory';
-    is $lines[2], '  file2         0.0B  01/15 10:30', 'file2 in subdirectory';
+    is $lines[0], '> file1         0.0B  01/15 10:30', 'selection reset to first entry in new dir';
+    is $lines[1], '  file2         0.0B  01/15 10:30', 'file2 in subdirectory';
 };
 
 subtest 'reload_directory preserves cursor position' => sub {
-    my $dir = temp_dir_with_files('file1', 'file2', 'file3');
+    my $dir = temp_dir_with_files('file1', 'file2', 'file3', 'file4');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
 
@@ -86,22 +84,22 @@ subtest 'reload_directory preserves cursor position' => sub {
         on_status_change => sub {}
     );
 
-    # Move to file2 (index 2: ../, file1, file2, file3)
+    # Move to file3 (index 2: file1, file2, file3, file4)
     $pane->move_selection(2);
     @$texts = ();
 
     # Reload directory
     $pane->reload_directory();
 
-    # Cursor should still be on file2
+    # Cursor should still be on file3
     my @lines = split /\n/, $texts->[-1];
-    is $lines[2], '> file2         0.0B  01/15 10:30', 'cursor preserved on file2 after reload';
+    is $lines[2], '> file3         0.0B  01/15 10:30', 'cursor preserved on file3 after reload';
 };
 
 subtest 'reload_directory updates index when earlier file is deleted' => sub {
     use Path::Tiny qw(path);
 
-    my $dir = temp_dir_with_files('file1', 'file2', 'file3');
+    my $dir = temp_dir_with_files('file1', 'file2', 'file3', 'file4');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
 
@@ -110,9 +108,9 @@ subtest 'reload_directory updates index when earlier file is deleted' => sub {
         on_status_change => sub {}
     );
 
-    # State: [../, file1, > file2, file3] (selected_index = 2)
+    # State: [file1, file2, > file3, file4] (selected_index = 2)
     $pane->move_selection(2);
-    is $pane->selected_index, 2, 'cursor on file2 at index 2';
+    is $pane->selected_index, 2, 'cursor on file3 at index 2';
 
     # Delete file1
     path("$dir/file1")->remove;
@@ -121,16 +119,16 @@ subtest 'reload_directory updates index when earlier file is deleted' => sub {
     # Reload directory
     $pane->reload_directory();
 
-    # Expected: [../, > file2, file3] (selected_index = 1)
+    # Expected: [file2, > file3, file4] (selected_index = 1)
     is $pane->selected_index, 1, 'cursor index updated to 1 after file1 deleted';
     my @lines = split /\n/, $texts->[-1];
-    is $lines[1], '> file2         0.0B  01/15 10:30', 'cursor still on file2 at new index';
+    is $lines[1], '> file3         0.0B  01/15 10:30', 'cursor still on file3 at new index';
 };
 
 subtest 'reload_directory keeps similar position when cursor file is deleted' => sub {
     use Path::Tiny qw(path);
 
-    my $dir = temp_dir_with_files('file1', 'file2', 'file3');
+    my $dir = temp_dir_with_files('file1', 'file2', 'file3', 'file4');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
 
@@ -139,20 +137,20 @@ subtest 'reload_directory keeps similar position when cursor file is deleted' =>
         on_status_change => sub {}
     );
 
-    # Move to file2 (index 2)
+    # Move to file3 (index 2)
     $pane->move_selection(2);
 
-    # Delete file2
-    path("$dir/file2")->remove;
+    # Delete file3 (the cursor file)
+    path("$dir/file3")->remove;
 
     @$texts = ();
     # Reload directory
     $pane->reload_directory();
 
-    # Cursor should stay at index 2 (now file3)
+    # Cursor should stay at index 2 (now file4)
     is $pane->selected_index, 2, 'cursor stayed at index 2';
     my @lines = split /\n/, $texts->[-1];
-    is $lines[2], '> file3         0.0B  01/15 10:30', 'cursor moved to file3 at same index';
+    is $lines[2], '> file4         0.0B  01/15 10:30', 'cursor moved to file4 at same index';
 };
 
 done_testing;

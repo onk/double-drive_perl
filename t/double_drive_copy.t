@@ -115,8 +115,6 @@ subtest 'copy multiple selected files' => sub {
     flush_tickit;
 
     # Select file1 and file2
-    presskey(text => "Down");
-    flush_tickit;
     presskey(text => " ");  # Space to select file1
     flush_tickit;
     presskey(text => " ");  # Space to select file2

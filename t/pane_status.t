@@ -17,12 +17,10 @@ subtest 'status_text returns formatted status' => sub {
         on_status_change => sub { $status_text = shift }
     );
 
-    # Trigger status change to get initial status
-    $pane->set_active(1);
+    $pane->set_active(1);  # trigger callback once widgets are initialized
 
     ok $status_text, 'status text is not empty';
-    like $status_text, qr/\[1\/3\]/, 'status contains position info (1 of 3: .., file1, file2)';
-    like $status_text, qr/\.\./, 'status shows parent directory';
+    like $status_text, qr/\[1\/2\]/, 'status contains position info (1 of 2: file1, file2)';
 };
 
 subtest 'status callback is called on move_selection' => sub {
@@ -44,7 +42,7 @@ subtest 'status callback is called on move_selection' => sub {
 
     is $callback_called, 1, 'callback called once';
     ok $callback_text, 'callback received text';
-    like $callback_text, qr/\[2\/3\]/, 'status shows updated position';
+    like $callback_text, qr/\[2\/2\]/, 'status shows updated position';
 };
 
 subtest 'status callback is called on change_directory' => sub {
@@ -62,9 +60,7 @@ subtest 'status callback is called on change_directory' => sub {
         }
     );
 
-    # Select subdir and enter it
-    $pane->move_selection(1);
-    $callback_called = 0;  # Reset counter after move
+    # Enter subdir (only entry)
     $pane->enter_selected();
 
     is $callback_called, 1, 'callback called after directory change';
@@ -103,9 +99,7 @@ subtest 'status_text shows directory with trailing slash' => sub {
         on_status_change => sub { $status_text = shift }
     );
 
-    # Move to the directory entry
-    $pane->move_selection(1);
-
+    $pane->set_active(1);
     like $status_text, qr/testdir\/$/, 'directory shows trailing slash';
 };
 
@@ -119,10 +113,22 @@ subtest 'status_text format is position and name' => sub {
         on_status_change => sub { $status_text = shift }
     );
 
-    # Move to the file entry
-    $pane->move_selection(1);
+    $pane->set_active(1);
+    like $status_text, qr/^\[1\/1\] file\.txt$/, 'status shows [position/total] filename format';
+};
 
-    like $status_text, qr/^\[2\/2\] file\.txt$/, 'status shows [position/total] filename format';
+subtest 'status_text is [0/0] for empty directory' => sub {
+    my $dir = temp_dir_with_files();  # empty
+
+    my $status_text;
+    my $pane = DoubleDrive::Pane->new(
+        path => $dir,
+        is_active => 1,
+        on_status_change => sub { $status_text = shift }
+    );
+
+    $pane->set_active(1);
+    is $status_text, '[0/0]', 'empty directory reports [0/0]';
 };
 
 done_testing;
