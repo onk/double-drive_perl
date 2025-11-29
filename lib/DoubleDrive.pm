@@ -134,12 +134,8 @@ class DoubleDrive {
         if (@$failed) {
             my $error_msg = "Failed to delete:\n" .
                 join("\n", map { "- $_->{file}: $_->{error}" } @$failed);
-            $self->_show_error_dialog($error_msg);
+            $dialog_factory->show_alert('Error', $error_msg);
         }
-    }
-
-    method _show_error_dialog($message) {
-        $dialog_factory->show_alert($message);
     }
 
     method copy_files() {
@@ -204,7 +200,7 @@ class DoubleDrive {
         if (@$failed) {
             my $error_msg = "Failed to copy:\n" .
                 join("\n", map { "- $_->{file}: $_->{error}" } @$failed);
-            $self->_show_error_dialog($error_msg);
+            $dialog_factory->show_alert('Error', $error_msg);
         }
     }
 

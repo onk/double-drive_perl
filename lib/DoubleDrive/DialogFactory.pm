@@ -14,6 +14,7 @@ class DoubleDrive::DialogFactory {
         my $dialog;
         $dialog = DoubleDrive::ConfirmDialog->new(
             message => $message,
+            title => 'Confirm',
             tickit => $tickit,
             float_box => $float_box,
             on_show => sub {
@@ -38,10 +39,11 @@ class DoubleDrive::DialogFactory {
     }
 
     # TODO: Switch to keyword args when available (clearer call sites, fewer position mistakes)
-    method show_alert($message, $on_ack = sub {}) {
+    method show_alert($title, $message, $on_ack = sub {}) {
         my $dialog;
         $dialog = DoubleDrive::ConfirmDialog->new(
             message => $message,
+            title => $title,
             tickit => $tickit,
             float_box => $float_box,
             mode => 'alert',

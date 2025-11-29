@@ -7,6 +7,7 @@ class DoubleDrive::ConfirmDialog {
     use Tickit::Widget::VBox;
     use Tickit::Widget::Frame;
     field $message :param;
+    field $title :param = 'Confirm';
     field $on_confirm :param;  # Callback for Yes/OK
     field $on_cancel :param;   # Callback for No/Escape
     field $on_show :param;     # Callback when dialog is shown
@@ -43,7 +44,7 @@ class DoubleDrive::ConfirmDialog {
 
         $dialog_widget = Tickit::Widget::Frame->new(
             style => { linetype => "double" },
-            title => "Confirm",
+            title => $title,
         )->set_child($vbox);
     }
 
