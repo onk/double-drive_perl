@@ -29,7 +29,12 @@ sub capture_widget_text ($window) {
     my $mock = mock 'DoubleDrive::TextWidget' => (
         override => [
             window   => sub { $window },
-            set_text => sub { my ($self, $text) = @_; push @texts, $text; return $self; },
+            set_lines => sub {
+                my ($self, $lines) = @_;
+                my $text = join("\n", map { $_->{text} } @$lines);
+                push @texts, $text;
+                return $self;
+            },
         ],
     );
     return (\@texts, $mock);

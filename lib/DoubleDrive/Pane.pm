@@ -4,10 +4,11 @@ use experimental 'class';
 
 class DoubleDrive::Pane {
     use Tickit::Widget::Frame;
+    use Tickit::Pen;
     use DoubleDrive::TextWidget;
     use DoubleDrive::TextUtil qw(display_name);
     use Path::Tiny qw(path);
-    use List::Util qw(min);
+    use List::Util qw(min first);
     use POSIX qw(strftime);
     use Unicode::GCString;
 
@@ -21,6 +22,11 @@ class DoubleDrive::Pane {
     field $selected_files = {};      # Hash of selected file paths (stringified path as key)
     field $widget :reader;
     field $text_widget;
+
+    # Incremental search state
+    field $search_query = "";
+    field $search_matches = [];      # File paths (strings) that match current query
+    field $in_search_mode = false;
 
     ADJUST {
         $current_path = path($path);
@@ -57,7 +63,7 @@ class DoubleDrive::Pane {
         return unless $window;
 
         if (!@$files) {
-            $text_widget->set_text("(empty directory)");
+            $text_widget->set_lines([{ text => "(empty directory)" }]);
             return;
         }
 
@@ -77,9 +83,11 @@ class DoubleDrive::Pane {
             $scroll_offset = $selected_index - $height + 1;
         }
 
-        # Build visible content
-        my $content_lines = [];
+        # Build display lines with color highlighting for search matches
+        my $lines = [];
         my $end_index = min($scroll_offset + $height - 1, $#$files);
+        my $highlight_pen = Tickit::Pen->new(fg => "hi-yellow");
+        my $match_set = { map { $_ => 1 } @$search_matches };
 
         for my $index ($scroll_offset .. $end_index) {
             my $file = $files->[$index];
@@ -92,20 +100,23 @@ class DoubleDrive::Pane {
                 ? ($is_cursor ? ">*" : " *")
                 : ($is_cursor ? "> " : "  ");
 
-            # Get file stats
+            my $text;
             my $stat = $file->stat;
             if ($stat) {
                 my $size = $self->_format_size($stat->size);
                 my $mtime = $self->_format_mtime($stat->mtime);
                 my $formatted_name = $self->_format_name($name, $max_name_width);
-                push @$content_lines, $selected . $formatted_name . " " . $size . "  " . $mtime;
+                $text = $selected . $formatted_name . " " . $size . "  " . $mtime;
             } else {
                 my $formatted_name = $self->_format_name($name, $max_name_width);
-                push @$content_lines, $selected . $formatted_name;
+                $text = $selected . $formatted_name;
             }
+
+            my $pen = $match_set->{$file->stringify} ? $highlight_pen : undef;
+            push @$lines, { text => $text, pen => $pen };
         }
 
-        $text_widget->set_text(join("\n", @$content_lines));
+        $text_widget->set_lines($lines);
     }
 
     method _format_size($bytes) {
@@ -181,6 +192,12 @@ class DoubleDrive::Pane {
         $selected_index = 0;
         $scroll_offset = 0;
         $widget->set_title(display_name($current_path->stringify));
+
+        # Clear search state when changing directories
+        $search_query = "";
+        $search_matches = [];
+        $in_search_mode = false;
+
         $self->_load_directory();
 
         # When explicitly moving to parent (".."), select the directory we came from if it exists
@@ -218,21 +235,30 @@ class DoubleDrive::Pane {
     }
 
     method _status_text() {
-        my $total_files = scalar(@$files);
-        return "[0/0]" if $total_files == 0;
-
-        my $selected = $files->[$selected_index];
-        my $name = display_name($selected->basename);
-        $name .= "/" if $selected->is_dir;
-
-        my $position = $selected_index + 1;
-        my $selected_count = scalar(keys %$selected_files);
-
-        if ($selected_count > 0) {
-            return sprintf("[%d/%d] (%d selected) %s", $position, $total_files, $selected_count, $name);
-        } else {
-            return sprintf("[%d/%d] %s", $position, $total_files, $name);
+        # If in search mode, return search status
+        my $search_status = $self->get_search_status();
+        if ($in_search_mode) {
+            return $search_status;
         }
+
+        my $total_files = scalar(@$files);
+        my $base_status = $total_files == 0 ? "[0/0]" : do {
+            my $selected = $files->[$selected_index];
+            my $name = display_name($selected->basename);
+            $name .= "/" if $selected->is_dir;
+
+            my $position = $selected_index + 1;
+            my $selected_count = scalar(keys %$selected_files);
+
+            if ($selected_count > 0) {
+                sprintf("[%d/%d] (%d selected) %s", $position, $total_files, $selected_count, $name);
+            } else {
+                sprintf("[%d/%d] %s", $position, $total_files, $name);
+            }
+        };
+
+        # Append search status if search query exists but not in search mode
+        return $base_status . $search_status;
     }
 
     method _notify_status_change() {
@@ -302,5 +328,117 @@ class DoubleDrive::Pane {
 
         $self->_render();
         $self->_notify_status_change();
+    }
+
+    # Incremental search methods
+    method enter_search_mode() {
+        $in_search_mode = true;
+        $search_query = "";
+        $search_matches = [];
+        $self->_notify_status_change();
+    }
+
+    method exit_search_mode() {
+        $in_search_mode = false;
+        $self->_notify_status_change();
+    }
+
+    method clear_search() {
+        $in_search_mode = false;
+        $search_query = "";
+        $search_matches = [];
+        $self->_render();
+        $self->_notify_status_change();
+    }
+
+    method add_search_char($char) {
+        $search_query .= $char;
+        $self->_update_matches();
+
+        if (@$search_matches) {
+            my $first_idx = $self->_find_file_index($search_matches->[0]);
+            $selected_index = $first_idx if defined $first_idx;
+        }
+
+        $self->_render();
+        $self->_notify_status_change();
+    }
+
+    method delete_search_char() {
+        return if length($search_query) == 0;
+        $search_query = substr($search_query, 0, -1);
+        $self->_update_matches();
+
+        if (@$search_matches) {
+            my $first_idx = $self->_find_file_index($search_matches->[0]);
+            $selected_index = $first_idx if defined $first_idx;
+        }
+
+        $self->_render();
+        $self->_notify_status_change();
+    }
+
+    method next_match() {
+        return if @$search_matches == 0;
+
+        my $indices = [map { $self->_find_file_index($_) // () } @$search_matches];
+        return unless @$indices;
+
+        my $next = first { $_ > $selected_index } @$indices;
+        $selected_index = $next // $indices->[0];
+
+        $self->_render();
+        $self->_notify_status_change();
+    }
+
+    method prev_match() {
+        return if @$search_matches == 0;
+
+        my $indices = [map { $self->_find_file_index($_) // () } @$search_matches];
+        return unless @$indices;
+
+        my $prev = first { $_ < $selected_index } reverse @$indices;
+        $selected_index = $prev // $indices->[-1];
+
+        $self->_render();
+        $self->_notify_status_change();
+    }
+
+    method _update_matches() {
+        $search_matches = [];
+
+        return if $search_query eq "";
+
+        my $query_lc = fc($search_query);
+
+        for my $file (@$files) {
+            my $name = display_name($file->basename);
+            if (index(fc($name), $query_lc) >= 0) {
+                push @$search_matches, $file->stringify;
+            }
+        }
+    }
+
+    method _find_file_index($path_str) {
+        for my ($i, $file) (indexed @$files) {
+            return $i if $file->stringify eq $path_str;
+        }
+        return undef;
+    }
+
+    method get_search_status() {
+        if ($in_search_mode) {
+            my $match_count = scalar(@$search_matches);
+            if ($match_count > 0) {
+                return "/$search_query ($match_count matches)";
+            } else {
+                return "/$search_query (no matches)";
+            }
+        } elsif ($search_query ne "") {
+            # Search mode exited but query remains
+            my $match_count = scalar(@$search_matches);
+            return " [search: $search_query ($match_count)]" if $match_count > 0;
+        }
+        return "";
     }
 }
