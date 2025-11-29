@@ -59,6 +59,11 @@ class DoubleDrive::Pane {
         my $window = $text_widget->window;
         return unless $window;
 
+        if (!@$files) {
+            $text_widget->set_text("");
+            return;
+        }
+
         my $height = $window->lines;
         my $width = $window->cols;
 
@@ -158,6 +163,8 @@ class DoubleDrive::Pane {
     }
 
     method move_selection($delta) {
+        return unless @$files;
+
         my $new_index = $selected_index + $delta;
 
         if ($new_index >= 0 && $new_index < scalar(@$files)) {
@@ -181,8 +188,7 @@ class DoubleDrive::Pane {
     }
 
     method enter_selected() {
-        return unless @$files > 0;
-
+        return unless @$files;
         my $selected = $files->[$selected_index];
         if ($selected->is_dir) {
             $self->change_directory($selected);
@@ -196,12 +202,14 @@ class DoubleDrive::Pane {
     }
 
     method _status_text() {
+        my $total_files = scalar(@$files);
+        return "[0/0]" if $total_files == 0;
+
         my $selected = $files->[$selected_index];
         my $name = display_name($selected->basename);
         $name = ".." if $selected eq $current_path->parent;
         $name .= "/" if $selected->is_dir;
 
-        my $total_files = scalar(@$files);
         my $position = $selected_index + 1;
         my $selected_count = scalar(keys %$selected_files);
 
@@ -219,6 +227,8 @@ class DoubleDrive::Pane {
     }
 
     method toggle_selection() {
+        return unless @$files;
+
         my $file = $files->[$selected_index];
         my $key = $file->stringify;
 
@@ -236,6 +246,8 @@ class DoubleDrive::Pane {
     }
 
     method get_files_to_operate() {
+        return [] unless @$files;
+
         # Return selected files if any exist, otherwise return current file
         if (keys %$selected_files) {
             return [grep { exists $selected_files->{$_->stringify} } @$files];
@@ -246,27 +258,32 @@ class DoubleDrive::Pane {
 
     method reload_directory() {
         # Remember the file the cursor was on
-        my $current_file = $files->[$selected_index];
-        my $current_file_path = $current_file->stringify;
+        my $current_file_path = @$files ? $files->[$selected_index]->stringify : undef;
 
         $self->_load_directory();
 
-        # Try to find the same file in the reloaded list
-        my $new_index;
-        for my ($i, $file) (indexed @$files) {
-            if ($file->stringify eq $current_file_path) {
-                $new_index = $i;
-                last;
+        if (@$files) {
+            # Try to find the same file in the reloaded list
+            my $new_index;
+            for my ($i, $file) (indexed @$files) {
+                if ($file->stringify eq $current_file_path) {
+                    $new_index = $i;
+                    last;
+                }
             }
+
+            # If file not found (was deleted), keep similar position
+            if (!defined $new_index) {
+                $new_index = $selected_index;
+                $new_index = $#$files if $new_index > $#$files;
+            }
+
+            $selected_index = $new_index;
+        } else {
+            # Empty directory: reset selection to 0
+            $selected_index = 0;
         }
 
-        # If file not found (was deleted), keep similar position
-        if (!defined $new_index) {
-            $new_index = $selected_index;
-            $new_index = $#$files if $new_index > $#$files;
-        }
-
-        $selected_index = $new_index;
         $self->_render();
         $self->_notify_status_change();
     }
