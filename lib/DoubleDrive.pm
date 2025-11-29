@@ -167,11 +167,7 @@ class DoubleDrive {
         }
 
         # Check for existing files in destination
-        my $existing = [];
-        for my $file (@$files) {
-            my $dest_file = $dest_path->child($file->basename);
-            push @$existing, $file->basename if $dest_file->exists;
-        }
+        my $existing = DoubleDrive::FileManipulator->overwrite_targets($files, $dest_path);
 
         # If no files will be overwritten, copy directly without confirmation
         if (!@$existing) {

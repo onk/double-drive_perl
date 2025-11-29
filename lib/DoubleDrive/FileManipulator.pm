@@ -4,6 +4,20 @@ use experimental 'class';
 class DoubleDrive::FileManipulator {
     use File::Copy::Recursive qw(rcopy);
 
+    sub overwrite_targets ($class, $files, $dest_path) {
+        my $existing = [];
+
+        for my $file (@$files) {
+            my $dest_file = $dest_path->child($file->basename);
+            my $dest_str  = $dest_file->stringify;
+
+            # -e misses broken symlinks; include -l to catch them
+            push @$existing, $file->basename if (-e $dest_str || -l $dest_str);
+        }
+
+        return $existing;
+    }
+
     sub copy_into_self ($class, $files, $dest_path) {
         my $dest_abs = $dest_path->realpath;
         my $dest_str = $dest_abs->stringify;
