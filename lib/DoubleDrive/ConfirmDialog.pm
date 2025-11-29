@@ -6,6 +6,8 @@ class DoubleDrive::ConfirmDialog {
     use Tickit::Widget::Static;
     use Tickit::Widget::VBox;
     use Tickit::Widget::Frame;
+    use Text::Wrap qw(wrap);
+    use List::Util qw(min max);
     field $message :param;
     field $title :param = 'Confirm';
     field $on_confirm :param;  # Callback for Yes/OK
@@ -26,10 +28,16 @@ class DoubleDrive::ConfirmDialog {
 
     method _build_widget() {
         my $vbox = Tickit::Widget::VBox->new;
+        my (undef, $cols) = $tickit->term->get_size;
+        my $wrap_width = $cols ? $cols - 44 : 80;   # align with FloatBox margins (left/right ~20 each) and frame
+        my $max_width  = $cols ? $cols - 4 : 120;   # leave a small border gap
+        $wrap_width = max(30, min($wrap_width, $max_width));  # clamp to a sensible range
+        local $Text::Wrap::columns = $wrap_width;
+        my $wrapped_message = wrap("", "", $message);
 
         # Message
         my $msg_widget = Tickit::Widget::Static->new(
-            text => $message,
+            text => $wrapped_message,
             align => "left",
         );
 
