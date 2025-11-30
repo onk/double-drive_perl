@@ -21,7 +21,7 @@ class DoubleDrive {
     field $status_bar;
     field $float_box;  # FloatBox for dialogs
     field $key_dispatcher;
-    field $search_key_handler;  # Event handler ID for search mode key events
+    field $cmdline_key_handler;  # Event handler ID for command line input mode key events
 
     ADJUST {
         $self->_build_ui();
@@ -97,25 +97,25 @@ class DoubleDrive {
 
     method enter_search_mode() {
         # Prevent duplicate handler registration
-        $self->_cleanup_search_handler() if $search_key_handler;
+        $self->_cleanup_cmdline_handler() if $cmdline_key_handler;
 
-        $key_dispatcher->enter_search_mode();
+        $key_dispatcher->enter_command_line_mode();
         $active_pane->enter_search_mode();
 
         # Capture all key events including multibyte characters (Japanese, etc.)
-        # This allows incremental search with any Unicode input
+        # This allows command line input with any Unicode input
         my $rootwin = $tickit->rootwin;
-        $search_key_handler = $rootwin->bind_event(
+        $cmdline_key_handler = $rootwin->bind_event(
             key => sub {
                 my ($win, $event, $info, $data) = @_;
-                return 0 unless $key_dispatcher->is_in_search_mode();
+                return 0 unless $key_dispatcher->is_in_command_line_mode();
 
                 my $type = $info->type;
                 my $key = $info->str;
 
                 if ($key eq 'Escape') {
                     # Clear search and exit mode
-                    $key_dispatcher->exit_search_mode();
+                    $key_dispatcher->exit_command_line_mode();
                     $active_pane->clear_search();
                     return 1;
                 } elsif ($key eq 'Enter') {
@@ -136,17 +136,17 @@ class DoubleDrive {
     }
 
     method exit_search_mode() {
-        $key_dispatcher->exit_search_mode();
+        $key_dispatcher->exit_command_line_mode();
         $active_pane->exit_search_mode();
-        $self->_cleanup_search_handler();
+        $self->_cleanup_cmdline_handler();
     }
 
-    method _cleanup_search_handler() {
-        return unless $search_key_handler;
+    method _cleanup_cmdline_handler() {
+        return unless $cmdline_key_handler;
 
         my $rootwin = $tickit->rootwin;
-        $rootwin->unbind_event_id($search_key_handler);
-        $search_key_handler = undef;
+        $rootwin->unbind_event_id($cmdline_key_handler);
+        $cmdline_key_handler = undef;
     }
 
     method switch_pane() {
