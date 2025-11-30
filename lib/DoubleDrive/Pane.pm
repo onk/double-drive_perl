@@ -24,8 +24,8 @@ class DoubleDrive::Pane {
     field $text_widget;
 
     # Search state
-    field $search_query = "";
-    field $search_matches = [];      # File paths (strings) that match current query
+    field $last_search_query = "";
+    field $last_search_matches = [];      # File paths (strings) that match last query
 
     ADJUST {
         $current_path = path($path);
@@ -86,7 +86,7 @@ class DoubleDrive::Pane {
         my $lines = [];
         my $end_index = min($scroll_offset + $height - 1, $#$files);
         my $highlight_pen = Tickit::Pen->new(fg => "hi-yellow");
-        my $match_set = { map { $_ => 1 } @$search_matches };
+        my $match_set = { map { $_ => 1 } @$last_search_matches };
 
         for my $index ($scroll_offset .. $end_index) {
             my $file = $files->[$index];
@@ -193,8 +193,8 @@ class DoubleDrive::Pane {
         $widget->set_title(display_name($current_path->stringify));
 
         # Clear search state when changing directories
-        $search_query = "";
-        $search_matches = [];
+        $last_search_query = "";
+        $last_search_matches = [];
 
         $self->_load_directory();
 
@@ -325,29 +325,29 @@ class DoubleDrive::Pane {
 
     # Search methods
     method update_search($query) {
-        $search_query = $query;
+        $last_search_query = $query;
         $self->_update_matches();
 
-        if (@$search_matches) {
-            my $first_idx = $self->_find_file_index($search_matches->[0]);
+        if (@$last_search_matches) {
+            my $first_idx = $self->_find_file_index($last_search_matches->[0]);
             $selected_index = $first_idx if defined $first_idx;
         }
 
         $self->_render();
-        return scalar(@$search_matches);  # Return match count for caller to display
+        return scalar(@$last_search_matches);  # Return match count for caller to display
     }
 
     method clear_search() {
-        $search_query = "";
-        $search_matches = [];
+        $last_search_query = "";
+        $last_search_matches = [];
         $self->_render();
         $self->_notify_status_change();
     }
 
     method next_match() {
-        return if @$search_matches == 0;
+        return if @$last_search_matches == 0;
 
-        my $indices = [map { $self->_find_file_index($_) // () } @$search_matches];
+        my $indices = [map { $self->_find_file_index($_) // () } @$last_search_matches];
         return unless @$indices;
 
         my $next = first { $_ > $selected_index } @$indices;
@@ -358,9 +358,9 @@ class DoubleDrive::Pane {
     }
 
     method prev_match() {
-        return if @$search_matches == 0;
+        return if @$last_search_matches == 0;
 
-        my $indices = [map { $self->_find_file_index($_) // () } @$search_matches];
+        my $indices = [map { $self->_find_file_index($_) // () } @$last_search_matches];
         return unless @$indices;
 
         my $prev = first { $_ < $selected_index } reverse @$indices;
@@ -371,16 +371,16 @@ class DoubleDrive::Pane {
     }
 
     method _update_matches() {
-        $search_matches = [];
+        $last_search_matches = [];
 
-        return if $search_query eq "";
+        return if $last_search_query eq "";
 
-        my $query_lc = fc($search_query);
+        my $query_lc = fc($last_search_query);
 
         for my $file (@$files) {
             my $name = display_name($file->basename);
             if (index(fc($name), $query_lc) >= 0) {
-                push @$search_matches, $file->stringify;
+                push @$last_search_matches, $file->stringify;
             }
         }
     }
@@ -395,9 +395,9 @@ class DoubleDrive::Pane {
     method get_search_status() {
         # Return search status for display after search mode exits
         # (During search mode, DoubleDrive manages the status bar directly)
-        if ($search_query ne "" && @$search_matches) {
-            my $match_count = scalar(@$search_matches);
-            return " [search: $search_query ($match_count)]";
+        if ($last_search_query ne "" && @$last_search_matches) {
+            my $match_count = scalar(@$last_search_matches);
+            return " [search: $last_search_query ($match_count)]";
         }
         return "";
     }
