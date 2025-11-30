@@ -13,6 +13,7 @@ class DoubleDrive {
     use DoubleDrive::AlertDialog;
     use DoubleDrive::KeyDispatcher;
     use DoubleDrive::FileManipulator;
+    use DoubleDrive::CommandInput;
 
     field $tickit;
     field $left_pane :reader;    # :reader for testing
@@ -22,10 +23,12 @@ class DoubleDrive {
     field $float_box;  # FloatBox for dialogs
     field $key_dispatcher;
     field $cmdline_key_handler;  # Event handler ID for command line input mode key events
+    field $cmdline_input;        # CommandInput instance for managing input buffer
 
     ADJUST {
         $self->_build_ui();
         $self->_setup_keybindings();
+        $cmdline_input = DoubleDrive::CommandInput->new();
     }
 
     method _build_ui() {
@@ -100,7 +103,11 @@ class DoubleDrive {
         $self->_cleanup_cmdline_handler() if $cmdline_key_handler;
 
         $key_dispatcher->enter_command_line_mode();
-        $active_pane->enter_search_mode();
+        $cmdline_input->clear();
+
+        # Initialize with empty search
+        $active_pane->update_search("");
+        $status_bar->set_text("/ (no matches)");
 
         # Capture all key events including multibyte characters (Japanese, etc.)
         # This allows command line input with any Unicode input
@@ -123,10 +130,26 @@ class DoubleDrive {
                     $self->exit_search_mode();
                     return 1;
                 } elsif ($key eq 'Backspace') {
-                    $active_pane->delete_search_char();
+                    $cmdline_input->delete_char();
+                    my $query = $cmdline_input->buffer;
+                    my $match_count = $active_pane->update_search($query);
+
+                    # Update status bar
+                    my $status = $match_count > 0
+                        ? "/$query ($match_count matches)"
+                        : "/$query (no matches)";
+                    $status_bar->set_text($status);
                     return 1;
                 } elsif ($type eq "text") {
-                    $active_pane->add_search_char($key);
+                    $cmdline_input->add_char($key);
+                    my $query = $cmdline_input->buffer;
+                    my $match_count = $active_pane->update_search($query);
+
+                    # Update status bar
+                    my $status = $match_count > 0
+                        ? "/$query ($match_count matches)"
+                        : "/$query (no matches)";
+                    $status_bar->set_text($status);
                     return 1;
                 }
 
@@ -137,8 +160,10 @@ class DoubleDrive {
 
     method exit_search_mode() {
         $key_dispatcher->exit_command_line_mode();
-        $active_pane->exit_search_mode();
         $self->_cleanup_cmdline_handler();
+
+        # Return to normal status display (managed by Pane)
+        $active_pane->_notify_status_change();
     }
 
     method _cleanup_cmdline_handler() {

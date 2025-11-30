@@ -8,69 +8,47 @@ use DoubleDrive::Test::Mock qw(mock_file_stat capture_widget_text FIXED_MTIME);
 use lib 'lib';
 use DoubleDrive::Pane;
 
-subtest 'enter_search_mode sets mode and clears state' => sub {
+subtest 'update_search with empty query' => sub {
     my $dir = temp_dir_with_files('file1.txt', 'file2.txt');
-
-    my $status_text;
-    my $pane = DoubleDrive::Pane->new(
-        path => $dir,
-        is_active => 1,
-        on_status_change => sub { $status_text = shift }
-    );
-
-    $pane->enter_search_mode();
-
-    like $status_text, qr{^/ \(no matches\)$}, 'status shows empty search';
-};
-
-subtest 'add_search_char matches files and moves cursor' => sub {
-    my $dir = temp_dir_with_files('apple.txt', 'banana.txt', 'apricot.txt');
-
-    my $status_text;
-    my $pane = DoubleDrive::Pane->new(
-        path => $dir,
-        is_active => 1,
-        on_status_change => sub { $status_text = shift }
-    );
-
-    $pane->enter_search_mode();
-    $pane->add_search_char('a');
-    $pane->add_search_char('p');
-
-    like $status_text, qr{^/ap \(2 matches\)$}, 'status shows 2 matches for "ap"';
-    is $pane->selected_index, 0, 'cursor moves to first match (apple)';
-};
-
-subtest 'delete_search_char updates matches' => sub {
-    my $dir = temp_dir_with_files('apple.txt', 'banana.txt', 'apricot.txt');
-
-    my $status_text;
-    my $pane = DoubleDrive::Pane->new(
-        path => $dir,
-        is_active => 1,
-        on_status_change => sub { $status_text = shift }
-    );
-
-    $pane->enter_search_mode();
-    $pane->add_search_char('a');
-    $pane->add_search_char('p');
-    $pane->delete_search_char();
-
-    like $status_text, qr{^/a \(3 matches\)$}, 'status shows 3 matches for "a" after deletion';
-};
-
-subtest 'delete_search_char does nothing on empty query' => sub {
-    my $dir = temp_dir_with_files('file.txt');
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
         on_status_change => sub {}
     );
 
-    $pane->enter_search_mode();
+    my $match_count = $pane->update_search("");
+    is $match_count, 0, 'empty query returns 0 matches';
+};
 
-    # Should not error
-    ok lives { $pane->delete_search_char() }, 'delete on empty query does not error';
+subtest 'update_search matches files and moves cursor' => sub {
+    my $dir = temp_dir_with_files('apple.txt', 'banana.txt', 'apricot.txt');
+
+    my $pane = DoubleDrive::Pane->new(
+        path => $dir,
+        on_status_change => sub {}
+    );
+
+    my $match_count = $pane->update_search("ap");
+
+    is $match_count, 2, 'returns 2 matches for "ap"';
+    is $pane->selected_index, 0, 'cursor moves to first match (apple)';
+};
+
+subtest 'update_search with different queries' => sub {
+    my $dir = temp_dir_with_files('apple.txt', 'banana.txt', 'apricot.txt');
+
+    my $pane = DoubleDrive::Pane->new(
+        path => $dir,
+        on_status_change => sub {}
+    );
+
+    my $match_count1 = $pane->update_search("ap");
+    is $match_count1, 2, '2 matches for "ap"';
+    is $pane->selected_index, 0, 'cursor at first match (apple)';
+
+    my $match_count2 = $pane->update_search("a");
+    is $match_count2, 3, '3 matches for "a"';
+    is $pane->selected_index, 0, 'cursor at first match (apple)';
 };
 
 subtest 'next_match navigates forward with wrapping' => sub {
@@ -81,8 +59,7 @@ subtest 'next_match navigates forward with wrapping' => sub {
         on_status_change => sub {}
     );
 
-    $pane->enter_search_mode();
-    $pane->add_search_char('a');
+    $pane->update_search('a');
 
     # Files sorted: apple(0), apricot(1), banana(2), cherry(3)
     # Matches for "a": apple(0), apricot(1), banana(2)
@@ -106,8 +83,7 @@ subtest 'prev_match navigates backward with wrapping' => sub {
         on_status_change => sub {}
     );
 
-    $pane->enter_search_mode();
-    $pane->add_search_char('a');
+    $pane->update_search('a');
 
     # Files sorted: apple(0), apricot(1), banana(2), cherry(3)
     # Matches for "a": apple(0), apricot(1), banana(2)
@@ -131,36 +107,12 @@ subtest 'next_match does nothing with no matches' => sub {
         on_status_change => sub {}
     );
 
-    $pane->enter_search_mode();
-    $pane->add_search_char('z');
+    $pane->update_search('z');
 
     my $initial_index = $pane->selected_index;
     $pane->next_match();
 
     is $pane->selected_index, $initial_index, 'cursor does not move with no matches';
-};
-
-subtest 'exit_search_mode keeps results for n/N' => sub {
-    my $dir = temp_dir_with_files('apple.txt', 'banana.txt', 'apricot.txt');
-
-    my $status_text;
-    my $pane = DoubleDrive::Pane->new(
-        path => $dir,
-        is_active => 1,
-        on_status_change => sub { $status_text = shift }
-    );
-
-    $pane->enter_search_mode();
-    $pane->add_search_char('a');
-    $pane->exit_search_mode();
-
-    # Files sorted: apple(0), apricot(1), banana(2)
-    # All 3 match "a"
-    like $status_text, qr{\[search: a \(3\)\]}, 'status shows retained search results';
-
-    # n/N should still work
-    $pane->next_match();
-    is $pane->selected_index, 1, 'n navigates to next match after exit (apricot)';
 };
 
 subtest 'clear_search resets all state' => sub {
@@ -173,8 +125,7 @@ subtest 'clear_search resets all state' => sub {
         on_status_change => sub { $status_text = shift }
     );
 
-    $pane->enter_search_mode();
-    $pane->add_search_char('a');
+    $pane->update_search('a');
     $pane->clear_search();
 
     unlike $status_text, qr{search}, 'status does not show search after clear';
@@ -195,8 +146,7 @@ subtest 'change_directory clears search state' => sub {
         on_status_change => sub { $status_text = shift }
     );
 
-    $pane->enter_search_mode();
-    $pane->add_search_char('a');
+    $pane->update_search('a');
 
     # Change directory
     $pane->change_directory('subdir');
@@ -207,17 +157,14 @@ subtest 'change_directory clears search state' => sub {
 subtest 'search is case-insensitive' => sub {
     my $dir = temp_dir_with_files('Apple.txt', 'BANANA.txt', 'cherry.txt');
 
-    my $status_text;
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
-        is_active => 1,
-        on_status_change => sub { $status_text = shift }
+        on_status_change => sub {}
     );
 
-    $pane->enter_search_mode();
-    $pane->add_search_char('a');
+    my $match_count = $pane->update_search('a');
 
-    like $status_text, qr{^/a \(2 matches\)$}, 'matches Apple and BANANA (case-insensitive)';
+    is $match_count, 2, 'matches Apple and BANANA (case-insensitive)';
 };
 
 subtest 'get_search_status formats correctly' => sub {
@@ -231,19 +178,13 @@ subtest 'get_search_status formats correctly' => sub {
     # No search
     is $pane->get_search_status(), '', 'empty when not searching';
 
-    # Active search with matches
-    $pane->enter_search_mode();
-    $pane->add_search_char('f');
-    like $pane->get_search_status(), qr{^/f \(2 matches\)$}, 'active search format';
-
-    # Active search with no matches
-    $pane->add_search_char('z');
-    is $pane->get_search_status(), '/fz (no matches)', 'no matches format';
-
-    # Exited search
-    $pane->delete_search_char();
-    $pane->exit_search_mode();
+    # After search with matches
+    $pane->update_search('f');
     like $pane->get_search_status(), qr{^ \[search: f \(2\)\]$}, 'retained search format';
+
+    # After search with no matches
+    $pane->update_search('z');
+    is $pane->get_search_status(), '', 'empty when no matches';
 };
 
 done_testing;

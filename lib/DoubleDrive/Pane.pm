@@ -23,10 +23,9 @@ class DoubleDrive::Pane {
     field $widget :reader;
     field $text_widget;
 
-    # Incremental search state
+    # Search state
     field $search_query = "";
     field $search_matches = [];      # File paths (strings) that match current query
-    field $in_search_mode = false;
 
     ADJUST {
         $current_path = path($path);
@@ -196,7 +195,6 @@ class DoubleDrive::Pane {
         # Clear search state when changing directories
         $search_query = "";
         $search_matches = [];
-        $in_search_mode = false;
 
         $self->_load_directory();
 
@@ -235,12 +233,6 @@ class DoubleDrive::Pane {
     }
 
     method _status_text() {
-        # If in search mode, return search status
-        my $search_status = $self->get_search_status();
-        if ($in_search_mode) {
-            return $search_status;
-        }
-
         my $total_files = scalar(@$files);
         my $base_status = $total_files == 0 ? "[0/0]" : do {
             my $selected = $files->[$selected_index];
@@ -257,7 +249,8 @@ class DoubleDrive::Pane {
             }
         };
 
-        # Append search status if search query exists but not in search mode
+        # Append search status if search query exists
+        my $search_status = $self->get_search_status();
         return $base_status . $search_status;
     }
 
@@ -330,50 +323,23 @@ class DoubleDrive::Pane {
         $self->_notify_status_change();
     }
 
-    # Incremental search methods
-    method enter_search_mode() {
-        $in_search_mode = true;
-        $search_query = "";
-        $search_matches = [];
-        $self->_notify_status_change();
-    }
+    # Search methods
+    method update_search($query) {
+        $search_query = $query;
+        $self->_update_matches();
 
-    method exit_search_mode() {
-        $in_search_mode = false;
-        $self->_notify_status_change();
+        if (@$search_matches) {
+            my $first_idx = $self->_find_file_index($search_matches->[0]);
+            $selected_index = $first_idx if defined $first_idx;
+        }
+
+        $self->_render();
+        return scalar(@$search_matches);  # Return match count for caller to display
     }
 
     method clear_search() {
-        $in_search_mode = false;
         $search_query = "";
         $search_matches = [];
-        $self->_render();
-        $self->_notify_status_change();
-    }
-
-    method add_search_char($char) {
-        $search_query .= $char;
-        $self->_update_matches();
-
-        if (@$search_matches) {
-            my $first_idx = $self->_find_file_index($search_matches->[0]);
-            $selected_index = $first_idx if defined $first_idx;
-        }
-
-        $self->_render();
-        $self->_notify_status_change();
-    }
-
-    method delete_search_char() {
-        return if length($search_query) == 0;
-        $search_query = substr($search_query, 0, -1);
-        $self->_update_matches();
-
-        if (@$search_matches) {
-            my $first_idx = $self->_find_file_index($search_matches->[0]);
-            $selected_index = $first_idx if defined $first_idx;
-        }
-
         $self->_render();
         $self->_notify_status_change();
     }
@@ -427,17 +393,11 @@ class DoubleDrive::Pane {
     }
 
     method get_search_status() {
-        if ($in_search_mode) {
+        # Return search status for display after search mode exits
+        # (During search mode, DoubleDrive manages the status bar directly)
+        if ($search_query ne "" && @$search_matches) {
             my $match_count = scalar(@$search_matches);
-            if ($match_count > 0) {
-                return "/$search_query ($match_count matches)";
-            } else {
-                return "/$search_query (no matches)";
-            }
-        } elsif ($search_query ne "") {
-            # Search mode exited but query remains
-            my $match_count = scalar(@$search_matches);
-            return " [search: $search_query ($match_count)]" if $match_count > 0;
+            return " [search: $search_query ($match_count)]";
         }
         return "";
     }
