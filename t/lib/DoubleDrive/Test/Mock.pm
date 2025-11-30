@@ -28,10 +28,13 @@ sub capture_widget_text ($window) {
     my @texts;
     my $mock = mock 'DoubleDrive::FileListView' => (
         override => [
-            window   => sub { $window },
-            set_lines => sub {
-                my ($self, $lines) = @_;
-                my $text = join("\n", map { $_->{text} } @$lines);
+            window => sub { $window },
+        ],
+        around => [
+            set_rows => sub ($orig, $self, @args) {
+                $self->$orig(@args);
+                my $lines = $self->{lines} // [];
+                my $text  = join("\n", map { $_->{text} } @$lines);
                 push @texts, $text;
                 return $self;
             },

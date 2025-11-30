@@ -17,12 +17,6 @@ sub new ($class, @args) {
     return $self;
 }
 
-# Keep for tests and mocking: store preformatted lines and trigger redraw
-sub set_lines ($self, $lines) {
-    $self->{lines} = $lines;
-    $self->redraw if $self->window;
-}
-
 # Accept rows with metadata and format them into displayable lines.
 # Row shape: { path => Path::Tiny, is_cursor => Bool, is_selected => Bool, is_match => Bool }
 sub set_rows ($self, $rows) {
@@ -32,8 +26,8 @@ sub set_rows ($self, $rows) {
     my $highlight_pen = HIGHLIGHT_PEN;
     my $lines         = $self->_rows_to_lines($rows, $cols, $highlight_pen);
 
-    # set_lines can be mocked in tests; keep as separate call
-    $self->set_lines($lines);
+    $self->{lines} = $lines;
+    $self->redraw if $window;
     return $self;
 }
 
