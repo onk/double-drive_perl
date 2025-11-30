@@ -1,7 +1,7 @@
 use v5.42;
 use experimental 'class';
 
-class DoubleDrive {
+class DoubleDrive::App {
     use Tickit;
     use Tickit::Widget::FloatBox;
     use Tickit::Widget::HBox;

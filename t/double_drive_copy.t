@@ -10,7 +10,7 @@ use lib 't/lib';
 use DoubleDrive::Test::TempDir qw(temp_dir_with_files);
 
 use lib 'lib';
-use DoubleDrive;
+use DoubleDrive::App;
 
 BEGIN {
     $ENV{TZ} = 'UTC';
@@ -26,7 +26,7 @@ subtest 'copy current file without confirmation' => sub {
         override => [ new => sub { $mock_tickit } ]
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;
@@ -60,7 +60,7 @@ subtest 'cancel copy operation when overwriting' => sub {
         override => [ new => sub { $mock_tickit } ]
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;
@@ -102,7 +102,7 @@ subtest 'copy multiple selected files' => sub {
         override => [ new => sub { $mock_tickit } ]
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;
@@ -139,7 +139,7 @@ subtest 'copy shows overwrite warning' => sub {
         override => [ new => sub { $mock_tickit } ]
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;
@@ -182,7 +182,7 @@ subtest 'copy directory recursively' => sub {
         override => [ new => sub { $mock_tickit } ]
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;
@@ -231,7 +231,7 @@ subtest 'copy is skipped when both panes are the same path' => sub {
         ],
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;
@@ -273,7 +273,7 @@ subtest 'copy is skipped when destination is inside source' => sub {
         ],
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;

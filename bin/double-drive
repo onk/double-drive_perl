@@ -7,7 +7,7 @@ BEGIN { $ENV{PERL_CARMEL_PATH} //= "$RealBin/.."; }
 use Carmel::Setup;
 use lib "$RealBin/../lib";
 
-use DoubleDrive;
+use DoubleDrive::App;
 
-my $app = DoubleDrive->new();
+my $app = DoubleDrive::App->new();
 $app->run();

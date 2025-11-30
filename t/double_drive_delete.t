@@ -9,7 +9,7 @@ use lib 't/lib';
 use DoubleDrive::Test::TempDir qw(temp_dir_with_files);
 
 use lib 'lib';
-use DoubleDrive;
+use DoubleDrive::App;
 
 BEGIN {
     $ENV{TZ} = 'UTC';
@@ -24,7 +24,7 @@ subtest 'delete current file with confirmation' => sub {
         override => [ new => sub { $mock_tickit } ]
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;
@@ -58,7 +58,7 @@ subtest 'cancel delete operation' => sub {
         override => [ new => sub { $mock_tickit } ]
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;
@@ -88,7 +88,7 @@ subtest 'delete multiple selected files' => sub {
         override => [ new => sub { $mock_tickit } ]
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;
@@ -127,7 +127,7 @@ subtest 'delete with Tab/Enter navigation' => sub {
         override => [ new => sub { $mock_tickit } ]
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;
@@ -166,7 +166,7 @@ subtest 'cancel with Escape key' => sub {
         override => [ new => sub { $mock_tickit } ]
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;
@@ -199,7 +199,7 @@ subtest 'show error dialog on deletion failure' => sub {
         override => [ new => sub { $mock_tickit } ]
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;

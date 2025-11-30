@@ -8,7 +8,7 @@ use lib 't/lib';
 use DoubleDrive::Test::TempDir qw(temp_dir_with_files);
 
 use lib 'lib';
-use DoubleDrive;
+use DoubleDrive::App;
 
 BEGIN {
     $ENV{TZ} = 'UTC';
@@ -23,7 +23,7 @@ subtest 'key presses are handled' => sub {
         override => [ new => sub { $mock_tickit } ]
     );
 
-    my $app = DoubleDrive->new();
+    my $app = DoubleDrive::App->new();
 
     flush_tickit;
     drain_termlog;
