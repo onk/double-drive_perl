@@ -9,6 +9,7 @@ class DoubleDrive::Pane {
     use DoubleDrive::TextUtil qw(display_name);
     use Path::Tiny qw(path);
     use List::Util qw(min first);
+    use List::MoreUtils qw(firstidx);
     use POSIX qw(strftime);
     use Unicode::GCString;
 
@@ -26,6 +27,7 @@ class DoubleDrive::Pane {
     # Search state
     field $last_search_query = "";
     field $last_search_matches = [];      # File paths (strings) that match last query
+    field $last_match_pos;                # Last position in match list (1-indexed)
 
     ADJUST {
         $current_path = path($path);
@@ -195,6 +197,7 @@ class DoubleDrive::Pane {
         # Clear search state when changing directories
         $last_search_query = "";
         $last_search_matches = [];
+        $last_match_pos = undef;
 
         $self->_load_directory();
 
@@ -331,6 +334,9 @@ class DoubleDrive::Pane {
         if (@$last_search_matches) {
             my $first_idx = $self->_find_file_index($last_search_matches->[0]);
             $selected_index = $first_idx if defined $first_idx;
+            $last_match_pos = 1;  # Set initial position to first match
+        } else {
+            $last_match_pos = undef;  # Clear position if no matches
         }
 
         $self->_render();
@@ -340,6 +346,7 @@ class DoubleDrive::Pane {
     method clear_search() {
         $last_search_query = "";
         $last_search_matches = [];
+        $last_match_pos = undef;
         $self->_render();
         $self->_notify_status_change();
     }
@@ -353,6 +360,11 @@ class DoubleDrive::Pane {
         my $next = first { $_ > $selected_index } @$indices;
         $selected_index = $next // $indices->[0];
 
+        # Update last match position
+        my $current_file = $files->[$selected_index]->stringify;
+        my $idx = firstidx { $_ eq $current_file } @$last_search_matches;
+        $last_match_pos = $idx + 1 if $idx >= 0;
+
         $self->_render();
         $self->_notify_status_change();
     }
@@ -365,6 +377,11 @@ class DoubleDrive::Pane {
 
         my $prev = first { $_ < $selected_index } reverse @$indices;
         $selected_index = $prev // $indices->[-1];
+
+        # Update last match position
+        my $current_file = $files->[$selected_index]->stringify;
+        my $idx = firstidx { $_ eq $current_file } @$last_search_matches;
+        $last_match_pos = $idx + 1 if $idx >= 0;
 
         $self->_render();
         $self->_notify_status_change();
@@ -396,8 +413,8 @@ class DoubleDrive::Pane {
         # Return search status for display after search mode exits
         # (During search mode, DoubleDrive manages the status bar directly)
         if ($last_search_query ne "" && @$last_search_matches) {
-            my $match_count = scalar(@$last_search_matches);
-            return " [search: $last_search_query ($match_count)]";
+            my $total = scalar(@$last_search_matches);
+            return " [search: $last_search_query ($last_match_pos/$total)]";
         }
         return "";
     }

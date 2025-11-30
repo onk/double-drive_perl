@@ -1,5 +1,6 @@
 requires 'File::Copy::Recursive';
 requires 'File::MimeInfo';
+requires 'List::MoreUtils';
 requires 'Path::Tiny';
 requires 'Term::ReadKey';
 requires 'Tickit';

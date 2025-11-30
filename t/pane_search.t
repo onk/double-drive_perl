@@ -180,7 +180,7 @@ subtest 'get_search_status formats correctly' => sub {
 
     # After search with matches
     $pane->update_search('f');
-    like $pane->get_search_status(), qr{^ \[search: f \(2\)\]$}, 'retained search format';
+    like $pane->get_search_status(), qr{^ \[search: f \(1/2\)\]$}, 'retained search format with position';
 
     # After search with no matches
     $pane->update_search('z');
