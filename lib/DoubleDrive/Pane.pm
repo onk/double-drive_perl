@@ -53,6 +53,7 @@ class DoubleDrive::Pane {
     }
 
     method after_window_attached() {
+        $self->set_active($is_active);
         $self->_render();
     }
 

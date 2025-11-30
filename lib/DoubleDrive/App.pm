@@ -3,17 +3,13 @@ use experimental 'class';
 
 class DoubleDrive::App {
     use Tickit;
-    use Tickit::Widget::FloatBox;
-    use Tickit::Widget::HBox;
-    use Tickit::Widget::VBox;
-    use Tickit::Widget::Static;
     use DoubleDrive::TextUtil qw(display_name);
-    use DoubleDrive::Pane;
     use DoubleDrive::ConfirmDialog;
     use DoubleDrive::AlertDialog;
     use DoubleDrive::KeyDispatcher;
     use DoubleDrive::FileManipulator;
     use DoubleDrive::CommandInput;
+    use DoubleDrive::Layout;
 
     field $tickit;
     field $left_pane :reader;    # :reader for testing
@@ -26,54 +22,17 @@ class DoubleDrive::App {
     field $cmdline_input;        # CommandInput instance for managing input buffer
 
     ADJUST {
-        $self->_build_ui();
-        $self->_setup_keybindings();
-        $cmdline_input = DoubleDrive::CommandInput->new();
-    }
+        my $components = DoubleDrive::Layout->build(left_path => '.', right_path => '.');
 
-    method _build_ui() {
-        # Create FloatBox for overlaying dialogs
-        $float_box = Tickit::Widget::FloatBox->new;
+        $float_box = $components->{float_box};
+        $status_bar = $components->{status_bar};
+        $left_pane = $components->{left_pane};
+        $right_pane = $components->{right_pane};
 
-        # Create main vertical box
-        my $vbox = Tickit::Widget::VBox->new;
-
-        # Create horizontal box for dual panes
-        my $hbox = Tickit::Widget::HBox->new(spacing => 1);
-
-        # Create status bar
-        $status_bar = Tickit::Widget::Static->new(
-            text => "",
-            align => "left",
-        );
-
-        # Create panes with status change callback
-        $left_pane = DoubleDrive::Pane->new(
-            path => '.',
-            on_status_change => sub ($text) { $status_bar->set_text($text) }
-        );
-        $right_pane = DoubleDrive::Pane->new(
-            path => '.',
-            on_status_change => sub ($text) { $status_bar->set_text($text) }
-        );
-
-        $hbox->add($left_pane->widget, expand => 1);
-        $hbox->add($right_pane->widget, expand => 1);
-
-        # Add panes and status bar to vertical box
-        $vbox->add($hbox, expand => 1);
-        $vbox->add($status_bar);
-
-        # Set VBox as base child of FloatBox
-        $float_box->set_base_child($vbox);
+        $active_pane = $left_pane;
 
         $tickit = Tickit->new(root => $float_box);
-        $active_pane = $left_pane;
-        $left_pane->set_active(true);
 
-        $key_dispatcher = DoubleDrive::KeyDispatcher->new(tickit => $tickit);
-
-        # Trigger initial render after event loop starts and widgets are attached
         $tickit->later(sub {
             # Disable mouse tracking to allow text selection and copy/paste
             $tickit->term->setctl_int("mouse", 0);
@@ -81,6 +40,10 @@ class DoubleDrive::App {
             $left_pane->after_window_attached();
             $right_pane->after_window_attached();
         });
+
+        $key_dispatcher = DoubleDrive::KeyDispatcher->new(tickit => $tickit);
+        $self->_setup_keybindings();
+        $cmdline_input = DoubleDrive::CommandInput->new();
     }
 
     method _setup_keybindings() {
