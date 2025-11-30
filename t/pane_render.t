@@ -11,7 +11,7 @@ use lib 'lib';
 use DoubleDrive::Pane;
 
 # Note: This test uses capture_widget_text() instead of Tickit::Test's is_display()
-# to focus on the TextWidget content without Frame borders. This makes the test
+# to focus on the FileListView content without Frame borders. This makes the test
 # more focused on the Pane's text rendering logic rather than the full widget layout.
 
 BEGIN {

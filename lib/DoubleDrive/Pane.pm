@@ -5,13 +5,11 @@ use experimental 'class';
 class DoubleDrive::Pane {
     use Tickit::Widget::Frame;
     use Tickit::Pen;
-    use DoubleDrive::TextWidget;
+    use DoubleDrive::FileListView;
     use DoubleDrive::TextUtil qw(display_name);
     use Path::Tiny qw(path);
     use List::Util qw(min first);
     use List::MoreUtils qw(firstidx);
-    use POSIX qw(strftime);
-    use Unicode::GCString;
 
     field $path :param;              # Initial path (string or Path::Tiny object) passed to constructor
     field $on_status_change :param;
@@ -22,7 +20,7 @@ class DoubleDrive::Pane {
     field $scroll_offset = 0;        # First visible item index
     field $selected_files = {};      # Hash of selected file paths (stringified path as key)
     field $widget :reader;
-    field $text_widget;
+    field $file_list_view;
 
     # Search state
     field $last_search_query = "";
@@ -36,12 +34,12 @@ class DoubleDrive::Pane {
     }
 
     method _build_widget() {
-        $text_widget = DoubleDrive::TextWidget->new(text => "");
+        $file_list_view = DoubleDrive::FileListView->new(text => "");
 
         $widget = Tickit::Widget::Frame->new(
             style => { linetype => "single" },
             title => display_name($current_path->absolute->stringify),
-        )->set_child($text_widget);
+        )->set_child($file_list_view);
     }
 
     method _load_directory() {
@@ -60,20 +58,15 @@ class DoubleDrive::Pane {
 
     method _render() {
         # Skip rendering if not attached to window yet
-        my $window = $text_widget->window;
+        my $window = $file_list_view->window;
         return unless $window;
 
         if (!@$files) {
-            $text_widget->set_lines([{ text => "(empty directory)" }]);
+            $file_list_view->set_rows([]);
             return;
         }
 
         my $height = $window->lines;
-        my $width = $window->cols;
-
-        # Calculate max name width (width - selection(2) - size(8) - spacing(3) - mtime(11))
-        my $max_name_width = $width - 2 - 8 - 3 - 11;
-        $max_name_width = 10 if $max_name_width < 10;  # Minimum width
 
         # Adjust scroll offset to keep selected item visible
         if ($selected_index < $scroll_offset) {
@@ -85,89 +78,24 @@ class DoubleDrive::Pane {
         }
 
         # Build display lines with color highlighting for search matches
-        my $lines = [];
+        my $rows = [];
         my $end_index = min($scroll_offset + $height - 1, $#$files);
-        my $highlight_pen = Tickit::Pen->new(fg => "hi-yellow");
         my $match_set = { map { $_ => 1 } @$last_search_matches };
 
         for my $index ($scroll_offset .. $end_index) {
             my $file = $files->[$index];
-            my $name = display_name($file->basename);
-            $name .= "/" if $file->is_dir;
 
             my $is_selected_file = exists $selected_files->{$file->stringify};
             my $is_cursor = ($index == $selected_index);
-            my $selected = $is_selected_file
-                ? ($is_cursor ? ">*" : " *")
-                : ($is_cursor ? "> " : "  ");
-
-            my $text;
-            my $stat = $file->stat;
-            if ($stat) {
-                my $size = $self->_format_size($stat->size);
-                my $mtime = $self->_format_mtime($stat->mtime);
-                my $formatted_name = $self->_format_name($name, $max_name_width);
-                $text = $selected . $formatted_name . " " . $size . "  " . $mtime;
-            } else {
-                my $formatted_name = $self->_format_name($name, $max_name_width);
-                $text = $selected . $formatted_name;
-            }
-
-            my $pen = $match_set->{$file->stringify} ? $highlight_pen : undef;
-            push @$lines, { text => $text, pen => $pen };
+            push @$rows, {
+                path       => $file,
+                is_cursor  => $is_cursor,
+                is_selected => $is_selected_file,
+                is_match   => $match_set->{$file->stringify} ? 1 : 0,
+            };
         }
 
-        $text_widget->set_lines($lines);
-    }
-
-    method _format_size($bytes) {
-        my $units = [qw(B K M G T)];
-        my $unit_index = 0;
-        my $size = $bytes;
-
-        while ($size >= 1024 && $unit_index < $#$units) {
-            $size /= 1024;
-            $unit_index++;
-        }
-
-        return sprintf("%6.1f%s", $size, $units->[$unit_index]);
-    }
-
-    method _format_mtime($mtime) {
-        my $one_year_ago = time() - (365 * 24 * 60 * 60);
-
-        if ($mtime > $one_year_ago) {
-            return strftime("%m/%d %H:%M", localtime($mtime));
-        } else {
-            return strftime("%Y-%m-%d", localtime($mtime));
-        }
-    }
-
-    method _format_name($str, $target_width) {
-        my $gc = Unicode::GCString->new($str);
-        my $str_width = $gc->columns;
-
-        if ($str_width <= $target_width) {
-            return $str . (' ' x ($target_width - $str_width));
-        }
-
-        my $ellipsis = "...";
-        my $ellipsis_width = 3;
-        my $truncate_limit = $target_width - $ellipsis_width;
-        return $ellipsis if $truncate_limit <= 0;
-
-        my $out = "";
-        my $used_width = 0;
-        for my $g ($str =~ /\X/g) {
-            my $w = Unicode::GCString->new($g)->columns;
-            last if $used_width + $w > $truncate_limit;
-            $out .= $g;
-            $used_width += $w;
-        }
-
-        my $padding = $target_width - ($used_width + $ellipsis_width);
-        $padding = 0 if $padding < 0;
-        return $out . $ellipsis . (' ' x $padding);
+        $file_list_view->set_rows($rows);
     }
 
     method move_selection($delta) {

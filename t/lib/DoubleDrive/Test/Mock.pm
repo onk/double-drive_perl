@@ -26,7 +26,7 @@ sub StubStat (%args) {
 
 sub capture_widget_text ($window) {
     my @texts;
-    my $mock = mock 'DoubleDrive::TextWidget' => (
+    my $mock = mock 'DoubleDrive::FileListView' => (
         override => [
             window   => sub { $window },
             set_lines => sub {
