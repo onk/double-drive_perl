@@ -85,11 +85,12 @@ class DoubleDrive::Command::Copy {
 
     method _confirm_future($app, $message) {
         my $f = Future->new;
+        my $scope = $app->key_dispatcher->dialog_scope;
 
         DoubleDrive::ConfirmDialog->new(
             tickit => $app->tickit,
             float_box => $app->float_box,
-            key_dispatcher => $app->key_dispatcher,
+            key_scope => $scope,
             title => 'Confirm',
             message => $message,
             on_confirm => sub { $f->done(1) },
@@ -121,10 +122,11 @@ class DoubleDrive::Command::Copy {
         my $error_msg = "Failed to copy:\n" .
             join("\n", map { "- " . display_name($_->{file}) . ": $_->{error}" } @$failed);
 
+        my $scope = $app->key_dispatcher->dialog_scope;
         DoubleDrive::AlertDialog->new(
             tickit => $app->tickit,
             float_box => $app->float_box,
-            key_dispatcher => $app->key_dispatcher,
+            key_scope => $scope,
             title => 'Error',
             message => $error_msg,
         )->show();

@@ -47,11 +47,12 @@ sub dialog_env {
     my $tickit = MockTickit->new(term => $term);
     my $float_box = MockFloatBox->new;
     my $dispatcher = DoubleDrive::KeyDispatcher->new(tickit => $tickit);
+    my $scope = $dispatcher->dialog_scope;
 
     my %dialog_args = (
         tickit => $tickit,
         float_box => $float_box,
-        key_dispatcher => $dispatcher,
+        key_scope => $scope,
         title => $opts{title} // 'Confirm',
         message => $opts{message} // 'message',
         on_confirm => $opts{on_confirm} // sub {},
@@ -60,7 +61,7 @@ sub dialog_env {
 
     my $dialog = DoubleDrive::ConfirmDialog->new(%dialog_args);
 
-    return ($dialog, $tickit, $float_box, $dispatcher);
+    return ($dialog, $tickit, $float_box);
 }
 
 subtest 'instruction text toggles with selection' => sub {

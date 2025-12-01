@@ -48,17 +48,18 @@ sub dialog_env {
     my $tickit = MockTickit->new(term => $term);
     my $float_box = MockFloatBox->new;
     my $dispatcher = DoubleDrive::KeyDispatcher->new(tickit => $tickit);
+    my $scope = $dispatcher->dialog_scope;
 
     my $dialog = DoubleDrive::AlertDialog->new(
         tickit => $tickit,
         float_box => $float_box,
-        key_dispatcher => $dispatcher,
+        key_scope => $scope,
         title => $opts{title} // 'Alert',
         message => $opts{message} // 'message',
         on_ack => $opts{on_ack} // sub {},
     );
 
-    return ($dialog, $tickit, $float_box, $dispatcher);
+    return ($dialog, $tickit, $float_box);
 }
 
 subtest 'layout wraps message using terminal size' => sub {

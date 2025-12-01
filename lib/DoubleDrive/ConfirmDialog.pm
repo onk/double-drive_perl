@@ -18,13 +18,13 @@ class DoubleDrive::ConfirmDialog :isa(DoubleDrive::Dialog::Base) {
     }
 
     method _bind_keys() {
-        $self->key_dispatcher->bind_dialog('y' => sub { $self->confirm() });
-        $self->key_dispatcher->bind_dialog('Y' => sub { $self->confirm() });
-        $self->key_dispatcher->bind_dialog('n' => sub { $self->cancel() });
-        $self->key_dispatcher->bind_dialog('N' => sub { $self->cancel() });
-        $self->key_dispatcher->bind_dialog('Tab' => sub { $self->toggle_option() });
-        $self->key_dispatcher->bind_dialog('Enter' => sub { $self->execute_selected() });
-        $self->key_dispatcher->bind_dialog('Escape' => sub { $self->cancel() });
+        $self->key_scope->bind('y' => sub { $self->confirm() });
+        $self->key_scope->bind('Y' => sub { $self->confirm() });
+        $self->key_scope->bind('n' => sub { $self->cancel() });
+        $self->key_scope->bind('N' => sub { $self->cancel() });
+        $self->key_scope->bind('Tab' => sub { $self->toggle_option() });
+        $self->key_scope->bind('Enter' => sub { $self->execute_selected() });
+        $self->key_scope->bind('Escape' => sub { $self->cancel() });
     }
 
     method toggle_option() {

@@ -12,8 +12,8 @@ class DoubleDrive::AlertDialog :isa(DoubleDrive::Dialog::Base) {
     }
 
     method _bind_keys() {
-        $self->key_dispatcher->bind_dialog('Enter'  => sub { $self->_ack() });
-        $self->key_dispatcher->bind_dialog('Escape' => sub { $self->_ack() });
+        $self->key_scope->bind('Enter'  => sub { $self->_ack() });
+        $self->key_scope->bind('Escape' => sub { $self->_ack() });
     }
 
     method _ack() {

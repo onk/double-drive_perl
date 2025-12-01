@@ -11,7 +11,7 @@ class DoubleDrive::Dialog::Base {
 
     field $tickit :param :reader;
     field $float_box :param :reader;
-    field $key_dispatcher :param :reader;
+    field $key_scope :param;
     field $title :param = 'Dialog';
     field $message :param;
     field $dialog_widget;
@@ -93,7 +93,7 @@ class DoubleDrive::Dialog::Base {
     }
 
     method show() {
-        $self->_enter_dialog_mode();
+        die "key_scope is required for dialog" unless $key_scope;
         $self->_bind_keys();
 
         $float = $float_box->add_float(
@@ -106,16 +106,8 @@ class DoubleDrive::Dialog::Base {
 
     method close() {
         $float->remove if $float;
-        $self->_exit_dialog_mode();
+        $key_scope = undef;
     }
 
-    method _enter_dialog_mode() {
-        $self->key_dispatcher->enter_dialog_mode();
-    }
-
-    method _exit_dialog_mode() {
-        $self->key_dispatcher->exit_dialog_mode();
-    }
-
-    method _key_dispatcher() { return $key_dispatcher }
+    method key_scope() { return $key_scope }
 }
