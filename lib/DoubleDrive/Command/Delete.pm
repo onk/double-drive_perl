@@ -20,7 +20,8 @@ class DoubleDrive::Command::Delete {
 
     async method _execute_async($app) {
         my $active_pane = $app->active_pane;
-        my $targets = $self->_collect_targets($active_pane) or return;
+        my $targets = $active_pane->get_files_to_operate();
+        return unless @$targets;
 
         my $message = $self->_build_message($targets);
         try {
@@ -31,18 +32,6 @@ class DoubleDrive::Command::Delete {
             return if $self->_is_cancelled($e);
             $self->_alert_errors($app, [{ file => "(delete)", error => $e }]);
         }
-    }
-
-    method _collect_targets($pane) {
-        my $files = $pane->get_files_to_operate();
-        return unless @$files;
-
-        # Skip parent directory entry
-        my $parent = $pane->current_path->parent;
-        my $filtered = [grep { $_ ne $parent } @$files];
-        return unless @$filtered;
-
-        return $filtered;
     }
 
     method _build_message($files) {

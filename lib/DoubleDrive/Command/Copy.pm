@@ -22,7 +22,8 @@ class DoubleDrive::Command::Copy {
         my $active_pane = $app->active_pane;
         my $dest_pane = $app->opposite_pane();
 
-        my $files = $self->_collect_targets($active_pane) or return;
+        my $files = $active_pane->get_files_to_operate();
+        return unless @$files;
 
         return if $self->_guard_same_directory($active_pane, $dest_pane, $app->status_bar);
         return if $self->_guard_copy_into_self($files, $dest_pane, $app->status_bar);
@@ -44,18 +45,6 @@ class DoubleDrive::Command::Copy {
             return if $self->_is_cancelled($e);
             $self->_alert_errors($app, [{ file => "(copy)", error => $e }]);
         }
-    }
-
-    method _collect_targets($pane) {
-        my $files = $pane->get_files_to_operate();
-        return unless @$files;
-
-        # Skip parent directory entry
-        my $parent = $pane->current_path->parent;
-        my $filtered = [grep { $_ ne $parent } @$files];
-        return unless @$filtered;
-
-        return $filtered;
     }
 
     method _guard_same_directory($src_pane, $dest_pane, $status_bar) {
