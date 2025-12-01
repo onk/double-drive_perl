@@ -23,8 +23,14 @@ class DoubleDrive::Command::Delete {
         my $targets = $self->_collect_targets($active_pane) or return;
 
         my $message = $self->_build_message($targets);
-        await $self->_confirm_future($app, $message);
-        await $self->_perform_future($app, $active_pane, $targets);
+        try {
+            await $self->_confirm_future($app, $message);
+            await $self->_perform_future($app, $active_pane, $targets);
+        }
+        catch ($e) {
+            return if $self->_is_cancelled($e);
+            $self->_alert_errors($app, [{ file => "(delete)", error => $e }]);
+        }
     }
 
     method _collect_targets($pane) {
@@ -61,6 +67,12 @@ class DoubleDrive::Command::Delete {
         )->show();
 
         return $f;
+    }
+
+    method _is_cancelled($e) {
+        # When await sees a failed Future, it throws the failure's first arg as an exception.
+        # We treat anything beginning with "cancelled" as a user cancel.
+        return "$e" =~ /^cancelled\b/;
     }
 
     method _perform_future($app, $pane, $files) {

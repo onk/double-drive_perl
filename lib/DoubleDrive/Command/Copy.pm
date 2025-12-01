@@ -30,14 +30,20 @@ class DoubleDrive::Command::Copy {
         my $dest_path = $dest_pane->current_path;
         my $existing = DoubleDrive::FileManipulator->overwrite_targets($files, $dest_path);
 
-        if (!@$existing) {
-            await $self->_perform_future($app, $dest_pane, $files);
-            return;
-        }
+        try {
+            if (!@$existing) {
+                await $self->_perform_future($app, $dest_pane, $files);
+                return;
+            }
 
-        my $message = $self->_build_message($files, $existing);
-        await $self->_confirm_future($app, $message);
-        await $self->_perform_future($app, $dest_pane, $files);
+            my $message = $self->_build_message($files, $existing);
+            await $self->_confirm_future($app, $message);
+            await $self->_perform_future($app, $dest_pane, $files);
+        }
+        catch ($e) {
+            return if $self->_is_cancelled($e);
+            $self->_alert_errors($app, [{ file => "(copy)", error => $e }]);
+        }
     }
 
     method _collect_targets($pane) {
@@ -102,6 +108,12 @@ class DoubleDrive::Command::Copy {
         )->show();
 
         return $f;
+    }
+
+    method _is_cancelled($e) {
+        # When await sees a failed Future, it throws the failure's first arg as an exception.
+        # We treat anything beginning with "cancelled" as a user cancel.
+        return "$e" =~ /^cancelled\b/;
     }
 
     method _perform_future($app, $dest_pane, $files) {
