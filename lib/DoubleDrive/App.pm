@@ -52,12 +52,10 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal('Backspace' => sub { $active_pane->change_directory("..") });
         $key_dispatcher->bind_normal(' ' => sub { $active_pane->toggle_selection() });
         $key_dispatcher->bind_normal('d' => sub {
-            DoubleDrive::Command::Delete->new(
-            )->execute($self);
+            DoubleDrive::Command::Delete->new()->execute($self);
         });
         $key_dispatcher->bind_normal('c' => sub {
-            DoubleDrive::Command::Copy->new(
-            )->execute($self);
+            DoubleDrive::Command::Copy->new()->execute($self);
         });
         $key_dispatcher->bind_normal('/' => sub { $self->enter_search_mode() });
         $key_dispatcher->bind_normal('n' => sub { $active_pane->next_match() });

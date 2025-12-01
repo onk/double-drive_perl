@@ -1,5 +1,7 @@
 requires 'File::Copy::Recursive';
 requires 'File::MimeInfo';
+requires 'Future';
+requires 'Future::AsyncAwait';
 requires 'List::MoreUtils';
 requires 'Path::Tiny';
 requires 'Term::ReadKey';
