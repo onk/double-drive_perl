@@ -65,22 +65,23 @@ class DoubleDrive::App {
                 context => $self->command_context()
             )->execute();
         });
-        $key_dispatcher->bind_normal('/' => sub { $self->enter_search_mode() });
+        $key_dispatcher->bind_normal('/' => sub { $self->enter_search_cmdline() });
         $key_dispatcher->bind_normal('n' => sub { $active_pane->next_match() });
         $key_dispatcher->bind_normal('N' => sub { $active_pane->prev_match() });
         $key_dispatcher->bind_normal('Escape' => sub { $active_pane->clear_search() });
     }
 
-    method enter_search_mode() {
+    # Generic command line input mode with common key handling framework
+    # TODO: Use named arguments when available (v5.44)
+    method enter_cmdline_mode($callbacks) {
         # Prevent duplicate handler registration
         $self->_cleanup_cmdline_handler() if $cmdline_key_handler;
 
         $key_dispatcher->enter_command_line_mode();
         $cmdline_input->clear();
 
-        # Initialize with empty search
-        $active_pane->update_search("");
-        $status_bar->set_text("/ (no matches)");
+        # Initialize callback
+        $callbacks->{on_init}->() if $callbacks->{on_init};
 
         # Capture all key events including multibyte characters (Japanese, etc.)
         # This allows command line input with any Unicode input
@@ -94,35 +95,20 @@ class DoubleDrive::App {
                 my $key = $info->str;
 
                 if ($key eq 'Escape') {
-                    # Clear search and exit mode
-                    $key_dispatcher->exit_command_line_mode();
-                    $active_pane->clear_search();
+                    $callbacks->{on_cancel}->() if $callbacks->{on_cancel};
+                    $self->exit_cmdline_mode();
                     return 1;
                 } elsif ($key eq 'Enter') {
-                    # Keep search results for n/N navigation
-                    $self->exit_search_mode();
+                    $callbacks->{on_execute}->($cmdline_input->buffer) if $callbacks->{on_execute};
+                    $self->exit_cmdline_mode();
                     return 1;
                 } elsif ($key eq 'Backspace') {
                     $cmdline_input->delete_char();
-                    my $query = $cmdline_input->buffer;
-                    my $match_count = $active_pane->update_search($query);
-
-                    # Update status bar
-                    my $status = $match_count > 0
-                        ? "/$query ($match_count matches)"
-                        : "/$query (no matches)";
-                    $status_bar->set_text($status);
+                    $callbacks->{on_change}->($cmdline_input->buffer) if $callbacks->{on_change};
                     return 1;
                 } elsif ($type eq "text") {
                     $cmdline_input->add_char($key);
-                    my $query = $cmdline_input->buffer;
-                    my $match_count = $active_pane->update_search($query);
-
-                    # Update status bar
-                    my $status = $match_count > 0
-                        ? "/$query ($match_count matches)"
-                        : "/$query (no matches)";
-                    $status_bar->set_text($status);
+                    $callbacks->{on_change}->($cmdline_input->buffer) if $callbacks->{on_change};
                     return 1;
                 }
 
@@ -131,12 +117,33 @@ class DoubleDrive::App {
         );
     }
 
-    method exit_search_mode() {
+    # Search-specific command line mode
+    method enter_search_cmdline() {
+        $self->enter_cmdline_mode({
+            on_init => sub {
+                $active_pane->update_search("");
+                $status_bar->set_text("/ (no matches)");
+            },
+            on_change => sub ($query) {
+                my $match_count = $active_pane->update_search($query);
+                my $status = $match_count > 0
+                    ? "/$query ($match_count matches)"
+                    : "/$query (no matches)";
+                $status_bar->set_text($status);
+            },
+            on_execute => sub ($query) {
+                # Keep search results for n/N navigation
+                $active_pane->_notify_status_change();
+            },
+            on_cancel => sub {
+                $active_pane->clear_search();
+            }
+        });
+    }
+
+    method exit_cmdline_mode() {
         $key_dispatcher->exit_command_line_mode();
         $self->_cleanup_cmdline_handler();
-
-        # Return to normal status display (managed by Pane)
-        $active_pane->_notify_status_change();
     }
 
     method _cleanup_cmdline_handler() {
