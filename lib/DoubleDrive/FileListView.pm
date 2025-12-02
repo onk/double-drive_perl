@@ -23,15 +23,14 @@ sub set_rows ($self, $rows) {
     my $window = $self->window;
     my $cols   = $window ? $window->cols : undef;
 
-    my $highlight_pen = HIGHLIGHT_PEN;
-    my $lines         = $self->_rows_to_lines($rows, $cols, $highlight_pen);
+    my $lines = $self->_rows_to_lines($rows, $cols);
 
     $self->{lines} = $lines;
     $self->redraw if $window;
     return $self;
 }
 
-sub _rows_to_lines ($self, $rows, $cols, $highlight_pen) {
+sub _rows_to_lines ($self, $rows, $cols) {
 
     $rows //= [];
     return [{ text => "(empty directory)" }] unless @$rows;
@@ -60,7 +59,7 @@ sub _rows_to_lines ($self, $rows, $cols, $highlight_pen) {
             $text = $selector . $formatted_name;
         }
 
-        my $pen = $row->{is_match} ? $highlight_pen : undef;
+        my $pen = $row->{is_match} ? HIGHLIGHT_PEN : undef;
         push @$lines, { text => $text, pen => $pen };
     }
 
