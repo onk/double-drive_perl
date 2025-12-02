@@ -29,14 +29,13 @@ sub execute($self) {
 }
 
 async sub _execute_async($self) {
-    my $active_pane = $self->{active_pane};
-    my $targets = $active_pane->get_files_to_operate();
-    return unless @$targets;
+    my $files = $self->{active_pane}->get_files_to_operate();
+    return unless @$files;
 
-    my $message = $self->_build_message($targets);
+    my $message = $self->_build_message($files);
     try {
         await $self->{on_confirm}->($message, 'Confirm');
-        await $self->_perform_future($active_pane, $targets);
+        await $self->_perform_future($files);
     }
     catch ($e) {
         return if $self->_is_cancelled($e);
@@ -58,11 +57,11 @@ sub _is_cancelled($self, $e) {
     return "$e" =~ /^cancelled\b/;
 }
 
-async sub _perform_future($self, $pane, $files) {
+async sub _perform_future($self, $files) {
     my $failed = DoubleDrive::FileManipulator->delete_files($files);
 
     # Reload directory after deletion
-    $pane->reload_directory();
+    $self->{active_pane}->reload_directory();
 
     if (@$failed) {
         my $error_msg = "Failed to delete:\n" .
