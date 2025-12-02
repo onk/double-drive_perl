@@ -116,6 +116,7 @@ class DoubleDrive::Command::Copy {
             $dest_pane->reload_directory();
 
             $self->_alert_errors($app, $failed) if @$failed;
+            return Future->done;
         });
     }
 
