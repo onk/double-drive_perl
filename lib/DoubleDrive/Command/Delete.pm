@@ -10,6 +10,7 @@ class DoubleDrive::Command::Delete {
     use Future::AsyncAwait;
 
     field $pending_future;
+    field $on_status_change :param;
 
     method execute($app) {
         my $future = $self->_execute_async($app);

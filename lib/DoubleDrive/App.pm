@@ -13,7 +13,7 @@ class DoubleDrive::App {
     field $left_pane :reader;    # :reader for testing
     field $right_pane :reader;   # :reader for testing
     field $active_pane :reader;  # :reader for testing
-    field $status_bar :reader;
+    field $status_bar;
     field $float_box :reader;  # FloatBox for dialogs
     field $key_dispatcher :reader;
     field $cmdline_key_handler;  # Event handler ID for command line input mode key events
@@ -52,10 +52,14 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal('Backspace' => sub { $active_pane->change_directory("..") });
         $key_dispatcher->bind_normal(' ' => sub { $active_pane->toggle_selection() });
         $key_dispatcher->bind_normal('d' => sub {
-            DoubleDrive::Command::Delete->new()->execute($self);
+            DoubleDrive::Command::Delete->new(
+                on_status_change => sub ($text) { $status_bar->set_text($text) }
+            )->execute($self);
         });
         $key_dispatcher->bind_normal('c' => sub {
-            DoubleDrive::Command::Copy->new()->execute($self);
+            DoubleDrive::Command::Copy->new(
+                on_status_change => sub ($text) { $status_bar->set_text($text) }
+            )->execute($self);
         });
         $key_dispatcher->bind_normal('/' => sub { $self->enter_search_mode() });
         $key_dispatcher->bind_normal('n' => sub { $active_pane->next_match() });

@@ -10,6 +10,7 @@ class DoubleDrive::Command::Copy {
     use Future::AsyncAwait;
 
     field $pending_future;
+    field $on_status_change :param;
 
     method execute($app) {
         my $future = $self->_execute_async($app);
@@ -25,8 +26,8 @@ class DoubleDrive::Command::Copy {
         my $files = $active_pane->get_files_to_operate();
         return unless @$files;
 
-        return if $self->_guard_same_directory($active_pane, $dest_pane, $app->status_bar);
-        return if $self->_guard_copy_into_self($files, $dest_pane, $app->status_bar);
+        return if $self->_guard_same_directory($active_pane, $dest_pane);
+        return if $self->_guard_copy_into_self($files, $dest_pane);
 
         my $dest_path = $dest_pane->current_path;
         my $existing = DoubleDrive::FileManipulator->overwrite_targets($files, $dest_path);
@@ -47,23 +48,23 @@ class DoubleDrive::Command::Copy {
         }
     }
 
-    method _guard_same_directory($src_pane, $dest_pane, $status_bar) {
+    method _guard_same_directory($src_pane, $dest_pane) {
         my $src_path = $src_pane->current_path;
         my $dest_path = $dest_pane->current_path;
 
         if ($src_path->stringify eq $dest_path->stringify) {
-            $status_bar->set_text("Copy skipped: source and destination are the same");
+            $on_status_change->("Copy skipped: source and destination are the same");
             return true;
         }
 
         return false;
     }
 
-    method _guard_copy_into_self($files, $dest_pane, $status_bar) {
+    method _guard_copy_into_self($files, $dest_pane) {
         my $dest_path = $dest_pane->current_path;
 
         if (DoubleDrive::FileManipulator->copy_into_self($files, $dest_path)) {
-            $status_bar->set_text("Copy skipped: destination is inside source");
+            $on_status_change->("Copy skipped: destination is inside source");
             return true;
         }
 
