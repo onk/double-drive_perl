@@ -3,14 +3,14 @@ use experimental 'class';
 
 class DoubleDrive::Command::Copy {
     use DoubleDrive::TextUtil qw(display_name);
-    use DoubleDrive::ConfirmDialog;
-    use DoubleDrive::AlertDialog;
     use DoubleDrive::FileManipulator;
     use Future;
     use Future::AsyncAwait;
 
     field $pending_future;
     field $on_status_change :param;
+    field $on_confirm :param;
+    field $on_alert :param;
 
     method execute($app) {
         my $future = $self->_execute_async($app);
@@ -39,12 +39,12 @@ class DoubleDrive::Command::Copy {
             }
 
             my $message = $self->_build_message($files, $existing);
-            await $self->_confirm_future($app, $message);
+            await $on_confirm->($message, 'Confirm');
             await $self->_perform_future($app, $dest_pane, $files);
         }
         catch ($e) {
             return if $self->_is_cancelled($e);
-            await $self->_alert_errors($app, [{ file => "(copy)", error => $e }]);
+            await $on_alert->("Failed to copy:\n- (copy): $e", 'Error');
         }
     }
 
@@ -84,23 +84,6 @@ class DoubleDrive::Command::Copy {
         return "Copy $count files ($file_list)?\n$existing_count file(s) will be overwritten: $existing_list";
     }
 
-    method _confirm_future($app, $message) {
-        my $f = Future->new;
-        my $scope = $app->key_dispatcher->dialog_scope;
-
-        DoubleDrive::ConfirmDialog->new(
-            tickit => $app->tickit,
-            float_box => $app->float_box,
-            key_scope => $scope,
-            title => 'Confirm',
-            message => $message,
-            on_confirm => sub { $f->done(1) },
-            on_cancel => sub { $f->fail("cancelled") },
-        )->show();
-
-        return $f;
-    }
-
     method _is_cancelled($e) {
         # When await sees a failed Future, it throws the failure's first arg as an exception.
         # We treat anything beginning with "cancelled" as a user cancel.
@@ -114,24 +97,10 @@ class DoubleDrive::Command::Copy {
         # Reload destination pane directory
         $dest_pane->reload_directory();
 
-        await $self->_alert_errors($app, $failed) if @$failed;
-    }
-
-    method _alert_errors($app, $failed) {
-        my $error_msg = "Failed to copy:\n" .
-            join("\n", map { "- " . display_name($_->{file}) . ": $_->{error}" } @$failed);
-
-        my $f = Future->new;
-        my $scope = $app->key_dispatcher->dialog_scope;
-        DoubleDrive::AlertDialog->new(
-            tickit => $app->tickit,
-            float_box => $app->float_box,
-            key_scope => $scope,
-            title => 'Error',
-            message => $error_msg,
-            on_ack => sub { $f->done },
-        )->show();
-
-        return $f;
+        if (@$failed) {
+            my $error_msg = "Failed to copy:\n" .
+                join("\n", map { "- " . display_name($_->{file}) . ": $_->{error}" } @$failed);
+            await $on_alert->($error_msg, 'Error');
+        }
     }
 }

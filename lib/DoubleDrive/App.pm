@@ -8,14 +8,17 @@ class DoubleDrive::App {
     use DoubleDrive::Layout;
     use DoubleDrive::Command::Delete;
     use DoubleDrive::Command::Copy;
+    use DoubleDrive::ConfirmDialog;
+    use DoubleDrive::AlertDialog;
+    use Future::AsyncAwait;
 
-    field $tickit :reader;
+    field $tickit;
     field $left_pane :reader;    # :reader for testing
     field $right_pane :reader;   # :reader for testing
     field $active_pane :reader;  # :reader for testing
     field $status_bar;
-    field $float_box :reader;  # FloatBox for dialogs
-    field $key_dispatcher :reader;
+    field $float_box;  # FloatBox for dialogs
+    field $key_dispatcher;
     field $cmdline_key_handler;  # Event handler ID for command line input mode key events
     field $cmdline_input;        # CommandInput instance for managing input buffer
 
@@ -53,12 +56,16 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal(' ' => sub { $active_pane->toggle_selection() });
         $key_dispatcher->bind_normal('d' => sub {
             DoubleDrive::Command::Delete->new(
-                on_status_change => sub ($text) { $status_bar->set_text($text) }
+                on_status_change => sub ($text) { $status_bar->set_text($text) },
+                on_confirm => async sub ($msg, $title = 'Confirm') { await $self->confirm_dialog($msg, $title) },
+                on_alert => async sub ($msg, $title = 'Error') { await $self->alert_dialog($msg, $title) },
             )->execute($self);
         });
         $key_dispatcher->bind_normal('c' => sub {
             DoubleDrive::Command::Copy->new(
-                on_status_change => sub ($text) { $status_bar->set_text($text) }
+                on_status_change => sub ($text) { $status_bar->set_text($text) },
+                on_confirm => async sub ($msg, $title = 'Confirm') { await $self->confirm_dialog($msg, $title) },
+                on_alert => async sub ($msg, $title = 'Error') { await $self->alert_dialog($msg, $title) },
             )->execute($self);
         });
         $key_dispatcher->bind_normal('/' => sub { $self->enter_search_mode() });
@@ -151,6 +158,39 @@ class DoubleDrive::App {
 
     method opposite_pane() {
         return ($active_pane == $left_pane) ? $right_pane : $left_pane;
+    }
+
+    async method confirm_dialog($message, $title = 'Confirm') {
+        my $f = Future->new;
+        my $scope = $key_dispatcher->dialog_scope;
+
+        DoubleDrive::ConfirmDialog->new(
+            tickit => $tickit,
+            float_box => $float_box,
+            key_scope => $scope,
+            title => $title,
+            message => $message,
+            on_confirm => sub { $f->done(1) },
+            on_cancel => sub { $f->fail("cancelled") },
+        )->show();
+
+        return await $f;
+    }
+
+    async method alert_dialog($message, $title = 'Error') {
+        my $f = Future->new;
+        my $scope = $key_dispatcher->dialog_scope;
+
+        DoubleDrive::AlertDialog->new(
+            tickit => $tickit,
+            float_box => $float_box,
+            key_scope => $scope,
+            title => $title,
+            message => $message,
+            on_ack => sub { $f->done },
+        )->show();
+
+        return await $f;
     }
 
     method run() {

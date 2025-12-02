@@ -3,14 +3,14 @@ use experimental 'class';
 
 class DoubleDrive::Command::Delete {
     use DoubleDrive::TextUtil qw(display_name);
-    use DoubleDrive::ConfirmDialog;
-    use DoubleDrive::AlertDialog;
     use DoubleDrive::FileManipulator;
     use Future;
     use Future::AsyncAwait;
 
     field $pending_future;
     field $on_status_change :param;
+    field $on_confirm :param;
+    field $on_alert :param;
 
     method execute($app) {
         my $future = $self->_execute_async($app);
@@ -26,12 +26,12 @@ class DoubleDrive::Command::Delete {
 
         my $message = $self->_build_message($targets);
         try {
-            await $self->_confirm_future($app, $message);
+            await $on_confirm->($message, 'Confirm');
             await $self->_perform_future($app, $active_pane, $targets);
         }
         catch ($e) {
             return if $self->_is_cancelled($e);
-            await $self->_alert_errors($app, [{ file => "(delete)", error => $e }]);
+            await $on_alert->("Failed to delete:\n- (delete): $e", 'Error');
         }
     }
 
@@ -41,23 +41,6 @@ class DoubleDrive::Command::Delete {
         return $count == 1
             ? "Delete $file_list?"
             : "Delete $count files ($file_list)?";
-    }
-
-    method _confirm_future($app, $message) {
-        my $f = Future->new;
-        my $scope = $app->key_dispatcher->dialog_scope;
-
-        DoubleDrive::ConfirmDialog->new(
-            tickit => $app->tickit,
-            float_box => $app->float_box,
-            key_scope => $scope,
-            title => 'Confirm',
-            message => $message,
-            on_confirm => sub { $f->done(1) },
-            on_cancel => sub { $f->fail("cancelled") },
-        )->show();
-
-        return $f;
     }
 
     method _is_cancelled($e) {
@@ -72,24 +55,10 @@ class DoubleDrive::Command::Delete {
         # Reload directory after deletion
         $pane->reload_directory();
 
-        await $self->_alert_errors($app, $failed) if @$failed;
-    }
-
-    method _alert_errors($app, $failed) {
-        my $error_msg = "Failed to delete:\n" .
-            join("\n", map { "- " . display_name($_->{file}) . ": $_->{error}" } @$failed);
-
-        my $f = Future->new;
-        my $scope = $app->key_dispatcher->dialog_scope;
-        DoubleDrive::AlertDialog->new(
-            tickit => $app->tickit,
-            float_box => $app->float_box,
-            key_scope => $scope,
-            title => 'Error',
-            message => $error_msg,
-            on_ack => sub { $f->done },
-        )->show();
-
-        return $f;
+        if (@$failed) {
+            my $error_msg = "Failed to delete:\n" .
+                join("\n", map { "- " . display_name($_->{file}) . ": $_->{error}" } @$failed);
+            await $on_alert->($error_msg, 'Error');
+        }
     }
 }
