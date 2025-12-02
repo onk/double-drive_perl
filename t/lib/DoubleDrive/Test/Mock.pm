@@ -5,7 +5,7 @@ package DoubleDrive::Test::Mock;
 use Exporter 'import';
 use Test2::Tools::Mock qw(mock);
 
-our @EXPORT_OK = qw(mock_file_stat capture_widget_text StubStat FIXED_MTIME);
+our @EXPORT_OK = qw(mock_file_stat capture_widget_text StubStat mock_path mock_pane FIXED_MTIME);
 
 # Fixed timestamp: 2025-01-15 10:30:00 UTC
 use constant FIXED_MTIME => 1736937000;
@@ -52,4 +52,38 @@ sub mock_file_stat (%options) {
             stat => sub { StubStat(size => $size, mtime => $mtime) },
         ],
     );
+}
+
+# Mock Path::Tiny object for Command tests
+{
+    package DoubleDrive::Test::Mock::MockPath;
+    sub new($class, $name) {
+        bless { name => $name }, $class;
+    }
+    sub basename($self) { $self->{name} }
+    sub stringify($self) { $self->{name} }
+}
+
+sub mock_path ($name) {
+    return DoubleDrive::Test::Mock::MockPath->new($name);
+}
+
+# Mock Pane for Command tests
+{
+    package DoubleDrive::Test::Mock::MockPane;
+    sub new($class, %args) {
+        bless {
+            files => $args{files} // [],
+            current_path => $args{current_path} // DoubleDrive::Test::Mock::MockPath->new('/tmp'),
+            reload_called => 0,
+        }, $class;
+    }
+    sub get_files_to_operate($self) { $self->{files} }
+    sub reload_directory($self) { $self->{reload_called}++ }
+    sub reload_called($self) { $self->{reload_called} }
+    sub current_path($self) { $self->{current_path} }
+}
+
+sub mock_pane (%args) {
+    return DoubleDrive::Test::Mock::MockPane->new(%args);
 }
