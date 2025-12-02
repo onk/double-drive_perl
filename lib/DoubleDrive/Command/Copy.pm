@@ -1,116 +1,115 @@
+package DoubleDrive::Command::Copy;
 use v5.42;
-use experimental 'class';
 
-class DoubleDrive::Command::Copy {
-    use DoubleDrive::TextUtil qw(display_name);
-    use DoubleDrive::FileManipulator;
-    use Future;
-    use Future::AsyncAwait;
+use DoubleDrive::TextUtil qw(display_name);
+use DoubleDrive::FileManipulator;
+use Future;
+use Future::AsyncAwait;
 
-    field $pending_future;
-    field $context :param;
+sub new($class, %args) {
+    my $context = $args{context};
 
-    # Context を展開
-    field $active_pane;
-    field $opposite_pane;
-    field $on_status_change;
-    field $on_confirm;
-    field $on_alert;
+    my $self = bless {
+        pending_future => undef,
+        context => $context,
+        active_pane => $context->active_pane,
+        opposite_pane => $context->opposite_pane,
+        on_status_change => $context->on_status_change,
+        on_confirm => $context->on_confirm,
+        on_alert => $context->on_alert,
+    }, $class;
 
-    ADJUST {
-        $active_pane = $context->active_pane;
-        $opposite_pane = $context->opposite_pane;
-        $on_status_change = $context->on_status_change;
-        $on_confirm = $context->on_confirm;
-        $on_alert = $context->on_alert;
-    }
+    return $self;
+}
 
-    method execute() {
-        my $future = $self->_execute_async();
-        $pending_future = $future;
-        $future->on_ready(sub { $pending_future = undef });
-        return $future;
-    }
+sub execute($self) {
+    my $future = $self->_execute_async();
+    $self->{pending_future} = $future;
+    $future->on_ready(sub { $self->{pending_future} = undef });
+    return $future;
+}
 
-    async method _execute_async() {
-        my $files = $active_pane->get_files_to_operate();
-        return unless @$files;
+async sub _execute_async($self) {
+    my $active_pane = $self->{active_pane};
+    my $opposite_pane = $self->{opposite_pane};
 
-        return if $self->_guard_same_directory($active_pane, $opposite_pane);
-        return if $self->_guard_copy_into_self($files, $opposite_pane);
+    my $files = $active_pane->get_files_to_operate();
+    return unless @$files;
 
-        my $dest_path = $opposite_pane->current_path;
-        my $existing = DoubleDrive::FileManipulator->overwrite_targets($files, $dest_path);
+    return if $self->_guard_same_directory($active_pane, $opposite_pane);
+    return if $self->_guard_copy_into_self($files, $opposite_pane);
 
-        try {
-            if (!@$existing) {
-                await $self->_perform_future($opposite_pane, $files);
-                return;
-            }
+    my $dest_path = $opposite_pane->current_path;
+    my $existing = DoubleDrive::FileManipulator->overwrite_targets($files, $dest_path);
 
-            my $message = $self->_build_message($files, $existing);
-            await $on_confirm->($message, 'Confirm');
+    try {
+        if (!@$existing) {
             await $self->_perform_future($opposite_pane, $files);
+            return;
         }
-        catch ($e) {
-            return if $self->_is_cancelled($e);
-            await $on_alert->("Failed to copy:\n- (copy): $e", 'Error');
-        }
+
+        my $message = $self->_build_message($files, $existing);
+        await $self->{on_confirm}->($message, 'Confirm');
+        await $self->_perform_future($opposite_pane, $files);
+    }
+    catch ($e) {
+        return if $self->_is_cancelled($e);
+        await $self->{on_alert}->("Failed to copy:\n- (copy): $e", 'Error');
+    }
+}
+
+sub _guard_same_directory($self, $src_pane, $dest_pane) {
+    my $src_path = $src_pane->current_path;
+    my $dest_path = $dest_pane->current_path;
+
+    if ($src_path->stringify eq $dest_path->stringify) {
+        $self->{on_status_change}->("Copy skipped: source and destination are the same");
+        return true;
     }
 
-    method _guard_same_directory($src_pane, $dest_pane) {
-        my $src_path = $src_pane->current_path;
-        my $dest_path = $dest_pane->current_path;
+    return false;
+}
 
-        if ($src_path->stringify eq $dest_path->stringify) {
-            $on_status_change->("Copy skipped: source and destination are the same");
-            return true;
-        }
+sub _guard_copy_into_self($self, $files, $dest_pane) {
+    my $dest_path = $dest_pane->current_path;
 
-        return false;
+    if (DoubleDrive::FileManipulator->copy_into_self($files, $dest_path)) {
+        $self->{on_status_change}->("Copy skipped: destination is inside source");
+        return true;
     }
 
-    method _guard_copy_into_self($files, $dest_pane) {
-        my $dest_path = $dest_pane->current_path;
+    return false;
+}
 
-        if (DoubleDrive::FileManipulator->copy_into_self($files, $dest_path)) {
-            $on_status_change->("Copy skipped: destination is inside source");
-            return true;
-        }
+sub _build_message($self, $files, $existing) {
+    my $count = scalar(@$files);
+    my $file_list = join(", ", map { display_name($_->basename) } @$files);
+    my $existing_list = join(", ", map { display_name($_) } @$existing);
 
-        return false;
+    if ($count == 1) {
+        return "Overwrite $existing_list?";
     }
 
-    method _build_message($files, $existing) {
-        my $count = scalar(@$files);
-        my $file_list = join(", ", map { display_name($_->basename) } @$files);
-        my $existing_list = join(", ", map { display_name($_) } @$existing);
+    my $existing_count = scalar(@$existing);
+    return "Copy $count files ($file_list)?\n$existing_count file(s) will be overwritten: $existing_list";
+}
 
-        if ($count == 1) {
-            return "Overwrite $existing_list?";
-        }
+sub _is_cancelled($self, $e) {
+    # When await sees a failed Future, it throws the failure's first arg as an exception.
+    # We treat anything beginning with "cancelled" as a user cancel.
+    return "$e" =~ /^cancelled\b/;
+}
 
-        my $existing_count = scalar(@$existing);
-        return "Copy $count files ($file_list)?\n$existing_count file(s) will be overwritten: $existing_list";
-    }
+async sub _perform_future($self, $dest_pane, $files) {
+    my $dest_path = $dest_pane->current_path;
+    my $failed = DoubleDrive::FileManipulator->copy_files($files, $dest_path);
 
-    method _is_cancelled($e) {
-        # When await sees a failed Future, it throws the failure's first arg as an exception.
-        # We treat anything beginning with "cancelled" as a user cancel.
-        return "$e" =~ /^cancelled\b/;
-    }
+    # Reload destination pane directory
+    $dest_pane->reload_directory();
 
-    async method _perform_future($dest_pane, $files) {
-        my $dest_path = $dest_pane->current_path;
-        my $failed = DoubleDrive::FileManipulator->copy_files($files, $dest_path);
-
-        # Reload destination pane directory
-        $dest_pane->reload_directory();
-
-        if (@$failed) {
-            my $error_msg = "Failed to copy:\n" .
-                join("\n", map { "- " . display_name($_->{file}) . ": $_->{error}" } @$failed);
-            await $on_alert->($error_msg, 'Error');
-        }
+    if (@$failed) {
+        my $error_msg = "Failed to copy:\n" .
+            join("\n", map { "- " . display_name($_->{file}) . ": $_->{error}" } @$failed);
+        await $self->{on_alert}->($error_msg, 'Error');
     }
 }
