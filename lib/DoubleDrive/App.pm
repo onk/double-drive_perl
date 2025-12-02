@@ -8,6 +8,7 @@ class DoubleDrive::App {
     use DoubleDrive::Layout;
     use DoubleDrive::Command::Delete;
     use DoubleDrive::Command::Copy;
+    use DoubleDrive::CommandContext;
     use DoubleDrive::ConfirmDialog;
     use DoubleDrive::AlertDialog;
     use Future::AsyncAwait;
@@ -56,17 +57,13 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal(' ' => sub { $active_pane->toggle_selection() });
         $key_dispatcher->bind_normal('d' => sub {
             DoubleDrive::Command::Delete->new(
-                on_status_change => sub ($text) { $status_bar->set_text($text) },
-                on_confirm => async sub ($msg, $title = 'Confirm') { await $self->confirm_dialog($msg, $title) },
-                on_alert => async sub ($msg, $title = 'Error') { await $self->alert_dialog($msg, $title) },
-            )->execute($self);
+                context => $self->command_context()
+            )->execute();
         });
         $key_dispatcher->bind_normal('c' => sub {
             DoubleDrive::Command::Copy->new(
-                on_status_change => sub ($text) { $status_bar->set_text($text) },
-                on_confirm => async sub ($msg, $title = 'Confirm') { await $self->confirm_dialog($msg, $title) },
-                on_alert => async sub ($msg, $title = 'Error') { await $self->alert_dialog($msg, $title) },
-            )->execute($self);
+                context => $self->command_context()
+            )->execute();
         });
         $key_dispatcher->bind_normal('/' => sub { $self->enter_search_mode() });
         $key_dispatcher->bind_normal('n' => sub { $active_pane->next_match() });
@@ -158,6 +155,20 @@ class DoubleDrive::App {
 
     method opposite_pane() {
         return ($active_pane == $left_pane) ? $right_pane : $left_pane;
+    }
+
+    method command_context() {
+        return DoubleDrive::CommandContext->new(
+            active_pane => $active_pane,
+            opposite_pane => $self->opposite_pane(),
+            on_status_change => sub ($text) { $status_bar->set_text($text) },
+            on_confirm => async sub ($msg, $title = 'Confirm') {
+                await $self->confirm_dialog($msg, $title)
+            },
+            on_alert => async sub ($msg, $title = 'Error') {
+                await $self->alert_dialog($msg, $title)
+            },
+        );
     }
 
     async method confirm_dialog($message, $title = 'Confirm') {

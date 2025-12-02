@@ -8,39 +8,49 @@ class DoubleDrive::Command::Copy {
     use Future::AsyncAwait;
 
     field $pending_future;
-    field $on_status_change :param;
-    field $on_confirm :param;
-    field $on_alert :param;
+    field $context :param;
 
-    method execute($app) {
-        my $future = $self->_execute_async($app);
+    # Context を展開
+    field $active_pane;
+    field $opposite_pane;
+    field $on_status_change;
+    field $on_confirm;
+    field $on_alert;
+
+    ADJUST {
+        $active_pane = $context->active_pane;
+        $opposite_pane = $context->opposite_pane;
+        $on_status_change = $context->on_status_change;
+        $on_confirm = $context->on_confirm;
+        $on_alert = $context->on_alert;
+    }
+
+    method execute() {
+        my $future = $self->_execute_async();
         $pending_future = $future;
         $future->on_ready(sub { $pending_future = undef });
         return $future;
     }
 
-    async method _execute_async($app) {
-        my $active_pane = $app->active_pane;
-        my $dest_pane = $app->opposite_pane();
-
+    async method _execute_async() {
         my $files = $active_pane->get_files_to_operate();
         return unless @$files;
 
-        return if $self->_guard_same_directory($active_pane, $dest_pane);
-        return if $self->_guard_copy_into_self($files, $dest_pane);
+        return if $self->_guard_same_directory($active_pane, $opposite_pane);
+        return if $self->_guard_copy_into_self($files, $opposite_pane);
 
-        my $dest_path = $dest_pane->current_path;
+        my $dest_path = $opposite_pane->current_path;
         my $existing = DoubleDrive::FileManipulator->overwrite_targets($files, $dest_path);
 
         try {
             if (!@$existing) {
-                await $self->_perform_future($app, $dest_pane, $files);
+                await $self->_perform_future($opposite_pane, $files);
                 return;
             }
 
             my $message = $self->_build_message($files, $existing);
             await $on_confirm->($message, 'Confirm');
-            await $self->_perform_future($app, $dest_pane, $files);
+            await $self->_perform_future($opposite_pane, $files);
         }
         catch ($e) {
             return if $self->_is_cancelled($e);
@@ -90,7 +100,7 @@ class DoubleDrive::Command::Copy {
         return "$e" =~ /^cancelled\b/;
     }
 
-    async method _perform_future($app, $dest_pane, $files) {
+    async method _perform_future($dest_pane, $files) {
         my $dest_path = $dest_pane->current_path;
         my $failed = DoubleDrive::FileManipulator->copy_files($files, $dest_path);
 

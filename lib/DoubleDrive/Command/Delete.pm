@@ -8,26 +8,36 @@ class DoubleDrive::Command::Delete {
     use Future::AsyncAwait;
 
     field $pending_future;
-    field $on_status_change :param;
-    field $on_confirm :param;
-    field $on_alert :param;
+    field $context :param;
 
-    method execute($app) {
-        my $future = $self->_execute_async($app);
+    # Context を展開
+    field $active_pane;
+    field $on_status_change;
+    field $on_confirm;
+    field $on_alert;
+
+    ADJUST {
+        $active_pane = $context->active_pane;
+        $on_status_change = $context->on_status_change;
+        $on_confirm = $context->on_confirm;
+        $on_alert = $context->on_alert;
+    }
+
+    method execute() {
+        my $future = $self->_execute_async();
         $pending_future = $future;
         $future->on_ready(sub { $pending_future = undef });
         return $future;
     }
 
-    async method _execute_async($app) {
-        my $active_pane = $app->active_pane;
+    async method _execute_async() {
         my $targets = $active_pane->get_files_to_operate();
         return unless @$targets;
 
         my $message = $self->_build_message($targets);
         try {
             await $on_confirm->($message, 'Confirm');
-            await $self->_perform_future($app, $active_pane, $targets);
+            await $self->_perform_future($active_pane, $targets);
         }
         catch ($e) {
             return if $self->_is_cancelled($e);
@@ -49,7 +59,7 @@ class DoubleDrive::Command::Delete {
         return "$e" =~ /^cancelled\b/;
     }
 
-    async method _perform_future($app, $pane, $files) {
+    async method _perform_future($pane, $files) {
         my $failed = DoubleDrive::FileManipulator->delete_files($files);
 
         # Reload directory after deletion
