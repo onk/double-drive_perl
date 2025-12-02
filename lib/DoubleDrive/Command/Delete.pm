@@ -31,7 +31,7 @@ class DoubleDrive::Command::Delete {
         }
         catch ($e) {
             return if $self->_is_cancelled($e);
-            $self->_alert_errors($app, [{ file => "(delete)", error => $e }]);
+            await $self->_alert_errors($app, [{ file => "(delete)", error => $e }]);
         }
     }
 
@@ -66,22 +66,20 @@ class DoubleDrive::Command::Delete {
         return "$e" =~ /^cancelled\b/;
     }
 
-    method _perform_future($app, $pane, $files) {
-        return Future->call(sub {
-            my $failed = DoubleDrive::FileManipulator->delete_files($files);
+    async method _perform_future($app, $pane, $files) {
+        my $failed = DoubleDrive::FileManipulator->delete_files($files);
 
-            # Reload directory after deletion
-            $pane->reload_directory();
+        # Reload directory after deletion
+        $pane->reload_directory();
 
-            $self->_alert_errors($app, $failed) if @$failed;
-            return Future->done;
-        });
+        await $self->_alert_errors($app, $failed) if @$failed;
     }
 
     method _alert_errors($app, $failed) {
         my $error_msg = "Failed to delete:\n" .
             join("\n", map { "- " . display_name($_->{file}) . ": $_->{error}" } @$failed);
 
+        my $f = Future->new;
         my $scope = $app->key_dispatcher->dialog_scope;
         DoubleDrive::AlertDialog->new(
             tickit => $app->tickit,
@@ -89,6 +87,9 @@ class DoubleDrive::Command::Delete {
             key_scope => $scope,
             title => 'Error',
             message => $error_msg,
+            on_ack => sub { $f->done },
         )->show();
+
+        return $f;
     }
 }

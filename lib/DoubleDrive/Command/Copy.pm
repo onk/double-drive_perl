@@ -44,7 +44,7 @@ class DoubleDrive::Command::Copy {
         }
         catch ($e) {
             return if $self->_is_cancelled($e);
-            $self->_alert_errors($app, [{ file => "(copy)", error => $e }]);
+            await $self->_alert_errors($app, [{ file => "(copy)", error => $e }]);
         }
     }
 
@@ -107,23 +107,21 @@ class DoubleDrive::Command::Copy {
         return "$e" =~ /^cancelled\b/;
     }
 
-    method _perform_future($app, $dest_pane, $files) {
-        return Future->call(sub {
-            my $dest_path = $dest_pane->current_path;
-            my $failed = DoubleDrive::FileManipulator->copy_files($files, $dest_path);
+    async method _perform_future($app, $dest_pane, $files) {
+        my $dest_path = $dest_pane->current_path;
+        my $failed = DoubleDrive::FileManipulator->copy_files($files, $dest_path);
 
-            # Reload destination pane directory
-            $dest_pane->reload_directory();
+        # Reload destination pane directory
+        $dest_pane->reload_directory();
 
-            $self->_alert_errors($app, $failed) if @$failed;
-            return Future->done;
-        });
+        await $self->_alert_errors($app, $failed) if @$failed;
     }
 
     method _alert_errors($app, $failed) {
         my $error_msg = "Failed to copy:\n" .
             join("\n", map { "- " . display_name($_->{file}) . ": $_->{error}" } @$failed);
 
+        my $f = Future->new;
         my $scope = $app->key_dispatcher->dialog_scope;
         DoubleDrive::AlertDialog->new(
             tickit => $app->tickit,
@@ -131,6 +129,9 @@ class DoubleDrive::Command::Copy {
             key_scope => $scope,
             title => 'Error',
             message => $error_msg,
+            on_ack => sub { $f->done },
         )->show();
+
+        return $f;
     }
 }
