@@ -5,7 +5,7 @@ package DoubleDrive::Test::Mock;
 use Exporter 'import';
 use Test2::Tools::Mock qw(mock);
 
-our @EXPORT_OK = qw(mock_file_stat capture_widget_text StubStat mock_path mock_pane FIXED_MTIME);
+our @EXPORT_OK = qw(mock_file_stat capture_widget_text StubStat mock_path mock_pane mock_window mock_rb_and_rect FIXED_MTIME);
 
 # Fixed timestamp: 2025-01-15 10:30:00 UTC
 use constant FIXED_MTIME => 1736937000;
@@ -86,4 +86,52 @@ sub mock_path ($name) {
 
 sub mock_pane (%args) {
     return DoubleDrive::Test::Mock::MockPane->new(%args);
+}
+
+# Mock Window for FileListView tests
+{
+    package DoubleDrive::Test::Mock::MockWindow;
+    sub new($class, $cols) {
+        bless { cols => $cols }, $class;
+    }
+    sub cols($self) { $self->{cols} }
+}
+
+sub mock_window ($cols = 80) {
+    return DoubleDrive::Test::Mock::MockWindow->new($cols);
+}
+
+# Mock RenderBuffer and Rect for render tests
+sub mock_rb_and_rect ($top, $bottom) {
+    my @rendered;
+
+    my $rb = bless {
+        rendered => \@rendered,
+    }, 'DoubleDrive::Test::Mock::MockRB';
+
+    my $rect = bless {
+        top => $top,
+        bottom => $bottom,
+    }, 'DoubleDrive::Test::Mock::MockRect';
+
+    return ($rb, $rect, \@rendered);
+}
+
+{
+    package DoubleDrive::Test::Mock::MockRB;
+    sub eraserect($self, $rect) { }
+    sub text_at($self, $line, $col, $text, $pen = undef) {
+        push @{$self->{rendered}}, {
+            line => $line,
+            col => $col,
+            text => $text,
+            pen => $pen,
+        };
+    }
+}
+
+{
+    package DoubleDrive::Test::Mock::MockRect;
+    sub top($self) { $self->{top} }
+    sub bottom($self) { $self->{bottom} }
 }
