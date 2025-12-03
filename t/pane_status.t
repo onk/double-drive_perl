@@ -38,6 +38,7 @@ subtest 'status callback is called on move_selection' => sub {
         }
     );
 
+    $callback_called = 0;  # Reset after initialization
     $pane->move_selection(1);
 
     is $callback_called, 1, 'callback called once';
@@ -60,6 +61,7 @@ subtest 'status callback is called on change_directory' => sub {
         }
     );
 
+    $callback_called = 0;  # Reset after initialization
     # Enter subdir (only entry)
     $pane->enter_selected();
 

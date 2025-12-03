@@ -137,7 +137,7 @@ class DoubleDrive::App {
             },
             on_execute => sub ($query) {
                 # Keep search results for n/N navigation
-                $active_pane->_notify_status_change();
+                $active_pane->_render_status_bar();
             },
             on_cancel => sub {
                 $active_pane->clear_search();

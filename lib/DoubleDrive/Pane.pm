@@ -31,6 +31,7 @@ class DoubleDrive::Pane {
         $current_path = path($path);
         $self->_build_widget();
         $self->_load_directory();
+        $self->_render();
     }
 
     method _build_widget() {
@@ -48,8 +49,6 @@ class DoubleDrive::Pane {
 
         # Clear selection when loading a new directory
         $selected_files = {};
-
-        $self->_render();
     }
 
     method after_window_attached() {
@@ -57,7 +56,7 @@ class DoubleDrive::Pane {
         $self->_render();
     }
 
-    method _render() {
+    method _render_file_list() {
         # Skip rendering if not attached to window yet
         my $window = $file_list_view->window;
         return unless $window;
@@ -99,6 +98,11 @@ class DoubleDrive::Pane {
         $file_list_view->set_rows($rows);
     }
 
+    method _render() {
+        $self->_render_file_list();
+        $self->_render_status_bar();
+    }
+
     method move_selection($delta) {
         return unless @$files;
 
@@ -107,7 +111,6 @@ class DoubleDrive::Pane {
         if ($new_index >= 0 && $new_index < scalar(@$files)) {
             $selected_index = $new_index;
             $self->_render();
-            $self->_notify_status_change();
         }
     }
 
@@ -142,12 +145,11 @@ class DoubleDrive::Pane {
                 }
                 if (defined $new_index) {
                     $selected_index = $new_index;
-                    $self->_render();
                 }
             }
         }
 
-        $self->_notify_status_change();
+        $self->_render();
     }
 
     method enter_selected() {
@@ -162,7 +164,6 @@ class DoubleDrive::Pane {
         $is_active = $active;
         $widget->set_style(linetype => $is_active ? "double" : "single");
         $self->_render();
-        $self->_notify_status_change();
     }
 
     method _status_text() {
@@ -187,7 +188,7 @@ class DoubleDrive::Pane {
         return $base_status . $search_status;
     }
 
-    method _notify_status_change() {
+    method _render_status_bar() {
         return unless $is_active;
         my $status_text = $self->_status_text();
         $on_status_change->($status_text);
@@ -253,7 +254,6 @@ class DoubleDrive::Pane {
         }
 
         $self->_render();
-        $self->_notify_status_change();
     }
 
     # Search methods
@@ -278,7 +278,6 @@ class DoubleDrive::Pane {
         $last_search_matches = [];
         $last_match_pos = undef;
         $self->_render();
-        $self->_notify_status_change();
     }
 
     method next_match() {
@@ -296,7 +295,6 @@ class DoubleDrive::Pane {
         $last_match_pos = $idx + 1 if $idx >= 0;
 
         $self->_render();
-        $self->_notify_status_change();
     }
 
     method prev_match() {
@@ -314,7 +312,6 @@ class DoubleDrive::Pane {
         $last_match_pos = $idx + 1 if $idx >= 0;
 
         $self->_render();
-        $self->_notify_status_change();
     }
 
     method _update_matches() {
