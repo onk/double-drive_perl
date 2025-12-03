@@ -6,6 +6,7 @@ class DoubleDrive::Pane {
     use Tickit::Widget::Frame;
     use Tickit::Pen;
     use DoubleDrive::FileListView;
+    use DoubleDrive::FileListItem;
     use DoubleDrive::TextUtil qw(display_name);
     use Path::Tiny qw(path);
     use List::Util qw(min first);
@@ -15,10 +16,9 @@ class DoubleDrive::Pane {
     field $on_status_change :param;
     field $is_active :param :reader = false;  # :reader for testing
     field $current_path :reader;     # Current directory as Path::Tiny object (:reader for testing)
-    field $files = [];
+    field $files = [];               # Array of FileListItem objects
     field $selected_index :reader = 0;  # :reader for testing
     field $scroll_offset = 0;        # First visible item index
-    field $selected_files = {};      # Hash of selected file paths (stringified path as key)
     field $widget :reader;
     field $file_list_view;
 
@@ -44,11 +44,9 @@ class DoubleDrive::Pane {
     }
 
     method _load_directory() {
-        # Get all entries and sort alphabetically (case-insensitive)
-        $files = [sort { fc($a->basename) cmp fc($b->basename) } $current_path->children];
-
-        # Clear selection when loading a new directory
-        $selected_files = {};
+        # Get all entries, convert to FileListItem, and sort by NFC normalized basename
+        my $items = [map { DoubleDrive::FileListItem->new(path => $_) } $current_path->children];
+        $files = [sort { fc($a->basename) cmp fc($b->basename) } @$items];
     }
 
     method after_window_attached() {
@@ -80,18 +78,16 @@ class DoubleDrive::Pane {
         # Build display lines with color highlighting for search matches
         my $rows = [];
         my $end_index = min($scroll_offset + $height - 1, $#$files);
-        my $match_set = { map { $_ => 1 } @$last_search_matches };
 
         for my $index ($scroll_offset .. $end_index) {
-            my $file = $files->[$index];
+            my $item = $files->[$index];
 
-            my $is_selected_file = exists $selected_files->{$file->stringify};
             my $is_cursor = ($is_active && $index == $selected_index);
             push @$rows, {
-                path       => $file,
+                path       => $item->path,
                 is_cursor  => $is_cursor,
-                is_selected => $is_selected_file,
-                is_match   => $match_set->{$file->stringify} ? 1 : 0,
+                is_selected => $item->is_selected,
+                is_match   => $item->is_match,
             };
         }
 
@@ -137,8 +133,8 @@ class DoubleDrive::Pane {
         if (!($new_path isa Path::Tiny) && $new_path eq "..") {
             if (@$files) {
                 my $new_index;
-                for my ($i, $file) (indexed @$files) {
-                    if ($file->stringify eq $previous_path->stringify) {
+                for my ($i, $item) (indexed @$files) {
+                    if ($item->path->stringify eq $previous_path->stringify) {
                         $new_index = $i;
                         last;
                     }
@@ -156,7 +152,7 @@ class DoubleDrive::Pane {
         return unless @$files;
         my $selected = $files->[$selected_index];
         if ($selected->is_dir) {
-            $self->change_directory($selected);
+            $self->change_directory($selected->path);
         }
     }
 
@@ -170,11 +166,11 @@ class DoubleDrive::Pane {
         my $total_files = scalar(@$files);
         my $base_status = $total_files == 0 ? "[0/0]" : do {
             my $selected = $files->[$selected_index];
-            my $name = display_name($selected->basename);
+            my $name = $selected->basename;
             $name .= "/" if $selected->is_dir;
 
             my $position = $selected_index + 1;
-            my $selected_count = scalar(keys %$selected_files);
+            my $selected_count = scalar(grep { $_->is_selected } @$files);
 
             if ($selected_count > 0) {
                 sprintf("[%d/%d] (%d selected) %s", $position, $total_files, $selected_count, $name);
@@ -197,14 +193,8 @@ class DoubleDrive::Pane {
     method toggle_selection() {
         return unless @$files;
 
-        my $file = $files->[$selected_index];
-        my $key = $file->stringify;
-
-        if (exists $selected_files->{$key}) {
-            delete $selected_files->{$key};
-        } else {
-            $selected_files->{$key} = 1;
-        }
+        my $item = $files->[$selected_index];
+        $item->toggle_selected();
 
         # Render to show selection change
         $self->_render();
@@ -216,11 +206,12 @@ class DoubleDrive::Pane {
     method get_files_to_operate() {
         return [] unless @$files;
 
-        # Return selected files if any exist, otherwise return current file
-        if (keys %$selected_files) {
-            return [grep { exists $selected_files->{$_->stringify} } @$files];
+        my $selected_items = [grep { $_->is_selected } @$files];
+
+        if (@$selected_items) {
+            return [map { $_->path } @$selected_items];
         } else {
-            return [$files->[$selected_index]];
+            return [$files->[$selected_index]->path];
         }
     }
 
@@ -315,16 +306,21 @@ class DoubleDrive::Pane {
     }
 
     method _update_matches() {
+        # Clear all match flags
+        for my $item (@$files) {
+            $item->set_match(false);
+        }
+
         $last_search_matches = [];
 
         return if $last_search_query eq "";
 
         my $query_lc = fc($last_search_query);
 
-        for my $file (@$files) {
-            my $name = display_name($file->basename);
-            if (index(fc($name), $query_lc) >= 0) {
-                push @$last_search_matches, $file->stringify;
+        for my $item (@$files) {
+            if (index(fc($item->basename), $query_lc) >= 0) {
+                $item->set_match(true);
+                push @$last_search_matches, $item->stringify;
             }
         }
     }
