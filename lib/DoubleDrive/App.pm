@@ -5,7 +5,7 @@ use experimental 'class';
 class DoubleDrive::App {
     use Tickit;
     use DoubleDrive::KeyDispatcher;
-    use DoubleDrive::CommandInput;
+    use DoubleDrive::CommandLineMode;
     use DoubleDrive::Layout;
     use DoubleDrive::Command::Delete;
     use DoubleDrive::Command::Copy;
@@ -21,8 +21,7 @@ class DoubleDrive::App {
     field $status_bar;
     field $float_box;  # FloatBox for dialogs
     field $key_dispatcher;
-    field $cmdline_key_handler;  # Event handler ID for command line input mode key events
-    field $cmdline_input;        # CommandInput instance for managing input buffer
+    field $cmdline_mode;         # CommandLineMode instance for managing command line input
 
     ADJUST {
         my $components = DoubleDrive::Layout->build(left_path => '.', right_path => '.');
@@ -46,7 +45,10 @@ class DoubleDrive::App {
 
         $key_dispatcher = DoubleDrive::KeyDispatcher->new(tickit => $tickit);
         $self->_setup_keybindings();
-        $cmdline_input = DoubleDrive::CommandInput->new();
+        $cmdline_mode = DoubleDrive::CommandLineMode->new(
+            tickit => $tickit,
+            key_dispatcher => $key_dispatcher,
+        );
     }
 
     method _setup_keybindings() {
@@ -76,55 +78,9 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal('Escape' => sub { $active_pane->clear_search() });
     }
 
-    # Generic command line input mode with common key handling framework
-    # TODO: Use named arguments when available (v5.44)
-    method enter_cmdline_mode($callbacks) {
-        # Prevent duplicate handler registration
-        $self->_cleanup_cmdline_handler() if $cmdline_key_handler;
-
-        $key_dispatcher->enter_command_line_mode();
-        $cmdline_input->clear();
-
-        # Initialize callback
-        $callbacks->{on_init}->() if $callbacks->{on_init};
-
-        # Capture all key events including multibyte characters (Japanese, etc.)
-        # This allows command line input with any Unicode input
-        my $rootwin = $tickit->rootwin;
-        $cmdline_key_handler = $rootwin->bind_event(
-            key => sub {
-                my ($win, $event, $info, $data) = @_;
-                return 0 unless $key_dispatcher->is_in_command_line_mode();
-
-                my $type = $info->type;
-                my $key = $info->str;
-
-                if ($key eq 'Escape') {
-                    $callbacks->{on_cancel}->() if $callbacks->{on_cancel};
-                    $self->exit_cmdline_mode();
-                    return 1;
-                } elsif ($key eq 'Enter') {
-                    $callbacks->{on_execute}->($cmdline_input->buffer) if $callbacks->{on_execute};
-                    $self->exit_cmdline_mode();
-                    return 1;
-                } elsif ($key eq 'Backspace') {
-                    $cmdline_input->delete_char();
-                    $callbacks->{on_change}->($cmdline_input->buffer) if $callbacks->{on_change};
-                    return 1;
-                } elsif ($type eq "text") {
-                    $cmdline_input->add_char($key);
-                    $callbacks->{on_change}->($cmdline_input->buffer) if $callbacks->{on_change};
-                    return 1;
-                }
-
-                return 0;
-            }
-        );
-    }
-
     # Search-specific command line mode
     method enter_search_cmdline() {
-        $self->enter_cmdline_mode({
+        $cmdline_mode->enter({
             on_init => sub {
                 $active_pane->update_search("");
                 $status_bar->set_text("/ (no matches)");
@@ -138,26 +94,15 @@ class DoubleDrive::App {
             },
             on_execute => sub ($query) {
                 # Keep search results for n/N navigation
+                # Return control to active pane (redraw status bar and file list)
+                $active_pane->_render();
             },
             on_cancel => sub {
                 $active_pane->clear_search();
+                # Return control to active pane (redraw status bar and file list)
+                $active_pane->_render();
             }
         });
-    }
-
-    method exit_cmdline_mode() {
-        $key_dispatcher->exit_command_line_mode();
-        $self->_cleanup_cmdline_handler();
-        # Return control to active pane (redraw status bar and file list)
-        $active_pane->_render();
-    }
-
-    method _cleanup_cmdline_handler() {
-        return unless $cmdline_key_handler;
-
-        my $rootwin = $tickit->rootwin;
-        $rootwin->unbind_event_id($cmdline_key_handler);
-        $cmdline_key_handler = undef;
     }
 
     method switch_pane() {
