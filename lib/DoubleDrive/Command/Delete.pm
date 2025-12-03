@@ -1,5 +1,6 @@
 package DoubleDrive::Command::Delete;
 use v5.42;
+use utf8;
 
 use DoubleDrive::TextUtil qw(display_name);
 use DoubleDrive::FileManipulator;

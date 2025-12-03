@@ -1,4 +1,5 @@
 use v5.42;
+use utf8;
 use experimental 'class';
 
 class DoubleDrive::App {

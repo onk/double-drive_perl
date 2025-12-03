@@ -1,4 +1,5 @@
 use v5.42;
+use utf8;
 
 use Test2::V0;
 use Tickit::Test qw(mk_term);
