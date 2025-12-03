@@ -51,6 +51,10 @@ class DoubleDrive::App {
     method _setup_keybindings() {
         $key_dispatcher->bind_normal('Down' => sub { $active_pane->move_selection(1) });
         $key_dispatcher->bind_normal('Up' => sub { $active_pane->move_selection(-1) });
+        $key_dispatcher->bind_normal('j' => sub { $active_pane->move_selection(1) });
+        $key_dispatcher->bind_normal('k' => sub { $active_pane->move_selection(-1) });
+        $key_dispatcher->bind_normal('h' => sub { $self->switch_pane() if $active_pane == $right_pane });
+        $key_dispatcher->bind_normal('l' => sub { $self->switch_pane() if $active_pane == $left_pane });
         $key_dispatcher->bind_normal('Enter' => sub { $active_pane->enter_selected() });
         $key_dispatcher->bind_normal('Tab' => sub { $self->switch_pane() });
         $key_dispatcher->bind_normal('Backspace' => sub { $active_pane->change_directory("..") });
