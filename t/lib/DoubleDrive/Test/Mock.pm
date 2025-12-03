@@ -5,6 +5,7 @@ package DoubleDrive::Test::Mock;
 
 use Exporter 'import';
 use Test2::Tools::Mock qw(mock);
+use DoubleDrive::FileListItem;
 
 our @EXPORT_OK = qw(mock_file_stat capture_widget_text StubStat mock_path mock_pane mock_window mock_rb_and_rect FIXED_MTIME);
 
@@ -63,6 +64,7 @@ sub mock_file_stat (%options) {
     }
     sub basename($self) { $self->{name} }
     sub stringify($self) { $self->{name} }
+    sub realpath($self) { $self }
 }
 
 sub mock_path ($name) {
@@ -73,9 +75,10 @@ sub mock_path ($name) {
 {
     package DoubleDrive::Test::Mock::MockPane;
     sub new($class, %args) {
+        my $path = $args{current_path} // DoubleDrive::Test::Mock::MockPath->new('/tmp');
         bless {
             files => $args{files} // [],
-            current_path => $args{current_path} // DoubleDrive::Test::Mock::MockPath->new('/tmp'),
+            current_path => DoubleDrive::FileListItem->new(path => $path),
             reload_called => 0,
         }, $class;
     }

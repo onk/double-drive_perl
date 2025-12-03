@@ -11,6 +11,7 @@ use DoubleDrive::Test::TempDir qw(temp_dir_with_files);
 
 use lib 'lib';
 use DoubleDrive::App;
+use DoubleDrive::FileListItem;
 
 BEGIN {
     $ENV{TZ} = 'UTC';
@@ -31,7 +32,7 @@ subtest 'delete current file with confirmation' => sub {
     drain_termlog;
 
     my $left = $app->left_pane();
-    $left->change_directory(path($dir));
+    $left->change_directory(DoubleDrive::FileListItem->new(path => path($dir)));
     flush_tickit;
 
     # Cursor starts on file1 (index 0)
@@ -65,7 +66,7 @@ subtest 'cancel delete operation' => sub {
     drain_termlog;
 
     my $left = $app->left_pane();
-    $left->change_directory(path($dir));
+    $left->change_directory(DoubleDrive::FileListItem->new(path => path($dir)));
     flush_tickit;
 
     # Press 'd' to delete
@@ -95,7 +96,7 @@ subtest 'delete multiple selected files' => sub {
     drain_termlog;
 
     my $left = $app->left_pane();
-    $left->change_directory(path($dir));
+    $left->change_directory(DoubleDrive::FileListItem->new(path => path($dir)));
     flush_tickit;
 
     # Select file1
@@ -134,7 +135,7 @@ subtest 'delete with Tab/Enter navigation' => sub {
     drain_termlog;
 
     my $left = $app->left_pane();
-    $left->change_directory(path($dir));
+    $left->change_directory(DoubleDrive::FileListItem->new(path => path($dir)));
     flush_tickit;
 
     # Move to file1
@@ -173,7 +174,7 @@ subtest 'cancel with Escape key' => sub {
     drain_termlog;
 
     my $left = $app->left_pane();
-    $left->change_directory(path($dir));
+    $left->change_directory(DoubleDrive::FileListItem->new(path => path($dir)));
     flush_tickit;
 
     # Move to file1
@@ -206,7 +207,7 @@ subtest 'show error dialog on deletion failure' => sub {
     drain_termlog;
 
     my $left = $app->left_pane();
-    $left->change_directory(path($dir));
+    $left->change_directory(DoubleDrive::FileListItem->new(path => path($dir)));
     flush_tickit;
 
     # Mock Path::Tiny's remove method to throw an error

@@ -38,7 +38,7 @@ class DoubleDrive::Command::Copy {
         return if $self->_guard_same_directory();
         return if $self->_guard_copy_into_self($files);
 
-        my $dest_path = $opposite_pane->current_path;
+        my $dest_path = $opposite_pane->current_path->path;
         my $existing_files = DoubleDrive::FileManipulator->overwrite_targets($files, $dest_path);
 
         try {
@@ -67,7 +67,7 @@ class DoubleDrive::Command::Copy {
     }
 
     method _guard_copy_into_self($files) {
-        my $dest_path = $opposite_pane->current_path;
+        my $dest_path = $opposite_pane->current_path->path;
 
         if (DoubleDrive::FileManipulator->copy_into_self($files, $dest_path)) {
             $on_status_change->("Copy skipped: destination is inside source");
@@ -97,7 +97,7 @@ class DoubleDrive::Command::Copy {
     }
 
     async method _perform_future($files) {
-        my $dest_path = $opposite_pane->current_path;
+        my $dest_path = $opposite_pane->current_path->path;
         my $failed = DoubleDrive::FileManipulator->copy_files($files, $dest_path);
 
         # Reload destination pane directory

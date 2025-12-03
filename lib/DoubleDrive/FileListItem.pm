@@ -22,6 +22,12 @@ class DoubleDrive::FileListItem {
 
     method is_dir() { $path->is_dir }
     method stat() { $path->stat }
+    method children() {
+        return [map { DoubleDrive::FileListItem->new(path => $_) } $path->children];
+    }
+    method realpath() {
+        return DoubleDrive::FileListItem->new(path => $path->realpath);
+    }
 
     method set_match($match) {
         $is_match = $match;

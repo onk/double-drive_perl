@@ -7,7 +7,6 @@ class DoubleDrive::Pane {
     use Tickit::Pen;
     use DoubleDrive::FileListView;
     use DoubleDrive::FileListItem;
-    use DoubleDrive::TextUtil qw(display_name);
     use Path::Tiny qw(path);
     use List::Util qw(min first);
     use List::MoreUtils qw(firstidx);
@@ -15,7 +14,7 @@ class DoubleDrive::Pane {
     field $path :param;              # Initial path (string or Path::Tiny object) passed to constructor
     field $on_status_change :param;
     field $is_active :param :reader = false;  # :reader for testing
-    field $current_path :reader;     # Current directory as Path::Tiny object (:reader for testing)
+    field $current_path :reader;     # Current directory as FileListItem object (:reader for testing)
     field $files = [];               # Array of FileListItem objects
     field $selected_index :reader = 0;  # :reader for testing
     field $scroll_offset = 0;        # First visible item index
@@ -28,7 +27,7 @@ class DoubleDrive::Pane {
     field $last_match_pos;                # Last position in match list (1-indexed)
 
     ADJUST {
-        $current_path = path($path);
+        $current_path = DoubleDrive::FileListItem->new(path => path($path));
         $self->_build_widget();
         $self->_load_directory();
         $self->_render();
@@ -39,14 +38,13 @@ class DoubleDrive::Pane {
 
         $widget = Tickit::Widget::Frame->new(
             style => { linetype => "single" },
-            title => display_name($current_path->absolute->stringify),
+            title => $current_path->stringify,
         )->set_child($file_list_view);
     }
 
     method _load_directory() {
-        # Get all entries, convert to FileListItem, and sort by NFC normalized basename
-        my $items = [map { DoubleDrive::FileListItem->new(path => $_) } $current_path->children];
-        $files = [sort { fc($a->basename) cmp fc($b->basename) } @$items];
+        # Get all entries as FileListItem, and sort by NFC normalized basename
+        $files = [sort { fc($a->basename) cmp fc($b->basename) } @{$current_path->children}];
     }
 
     method after_window_attached() {
@@ -111,14 +109,16 @@ class DoubleDrive::Pane {
     method change_directory($new_path) {
         my $previous_path = $current_path;
 
-        # Handle both string paths and Path::Tiny objects
-        my $path_obj = $new_path isa Path::Tiny
-            ? $new_path
-            : path($current_path, $new_path);
-        $current_path = $path_obj->realpath;
+        # Handle FileListItem and string paths
+        if ($new_path isa DoubleDrive::FileListItem) {
+            $current_path = $new_path->realpath;
+        } else {
+            my $path_obj = path($current_path->path, $new_path);
+            $current_path = DoubleDrive::FileListItem->new(path => $path_obj)->realpath;
+        }
         $selected_index = 0;
         $scroll_offset = 0;
-        $widget->set_title(display_name($current_path->stringify));
+        $widget->set_title($current_path->stringify);
 
         # Clear search state when changing directories
         $last_search_query = "";
@@ -128,11 +128,11 @@ class DoubleDrive::Pane {
         $self->_load_directory();
 
         # When explicitly moving to parent (".."), select the directory we came from if it exists
-        if (!($new_path isa Path::Tiny) && $new_path eq "..") {
+        if (!($new_path isa DoubleDrive::FileListItem) && $new_path eq "..") {
             if (@$files) {
                 my $new_index;
                 for my ($i, $item) (indexed @$files) {
-                    if ($item->path->stringify eq $previous_path->stringify) {
+                    if ($item->stringify eq $previous_path->stringify) {
                         $new_index = $i;
                         last;
                     }
@@ -150,7 +150,7 @@ class DoubleDrive::Pane {
         return unless @$files;
         my $selected = $files->[$selected_index];
         if ($selected->is_dir) {
-            $self->change_directory($selected->path);
+            $self->change_directory($selected);
         }
     }
 

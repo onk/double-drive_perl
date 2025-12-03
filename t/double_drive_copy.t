@@ -12,6 +12,7 @@ use DoubleDrive::Test::TempDir qw(temp_dir_with_files);
 
 use lib 'lib';
 use DoubleDrive::App;
+use DoubleDrive::FileListItem;
 
 BEGIN {
     $ENV{TZ} = 'UTC';
@@ -35,8 +36,8 @@ subtest 'copy current file without confirmation' => sub {
     my $left = $app->left_pane();
     my $right = $app->right_pane();
 
-    $left->change_directory(path($src_dir));
-    $right->change_directory(path($dest_dir));
+    $left->change_directory(DoubleDrive::FileListItem->new(path => path($src_dir)));
+    $right->change_directory(DoubleDrive::FileListItem->new(path => path($dest_dir)));
     flush_tickit;
 
     # Move to file1 in left pane
@@ -69,8 +70,8 @@ subtest 'cancel copy operation when overwriting' => sub {
     my $left = $app->left_pane();
     my $right = $app->right_pane();
 
-    $left->change_directory(path($src_dir));
-    $right->change_directory(path($dest_dir));
+    $left->change_directory(DoubleDrive::FileListItem->new(path => path($src_dir)));
+    $right->change_directory(DoubleDrive::FileListItem->new(path => path($dest_dir)));
     flush_tickit;
 
     # Write different content to dest file1
@@ -111,8 +112,8 @@ subtest 'copy multiple selected files' => sub {
     my $left = $app->left_pane();
     my $right = $app->right_pane();
 
-    $left->change_directory(path($src_dir));
-    $right->change_directory(path($dest_dir));
+    $left->change_directory(DoubleDrive::FileListItem->new(path => path($src_dir)));
+    $right->change_directory(DoubleDrive::FileListItem->new(path => path($dest_dir)));
     flush_tickit;
 
     # Select file1 and file2
@@ -148,8 +149,8 @@ subtest 'copy shows overwrite warning' => sub {
     my $left = $app->left_pane();
     my $right = $app->right_pane();
 
-    $left->change_directory(path($src_dir));
-    $right->change_directory(path($dest_dir));
+    $left->change_directory(DoubleDrive::FileListItem->new(path => path($src_dir)));
+    $right->change_directory(DoubleDrive::FileListItem->new(path => path($dest_dir)));
     flush_tickit;
 
     # Write different content to dest file1
@@ -191,8 +192,8 @@ subtest 'copy directory recursively' => sub {
     my $left = $app->left_pane();
     my $right = $app->right_pane();
 
-    $left->change_directory(path($src_dir));
-    $right->change_directory(path($dest_dir));
+    $left->change_directory(DoubleDrive::FileListItem->new(path => path($src_dir)));
+    $right->change_directory(DoubleDrive::FileListItem->new(path => path($dest_dir)));
     flush_tickit;
 
     # Verify source subdir exists
@@ -240,8 +241,8 @@ subtest 'copy is skipped when both panes are the same path' => sub {
     my $left = $app->left_pane();
     my $right = $app->right_pane();
 
-    $left->change_directory(path($dir));
-    $right->change_directory(path($dir));
+    $left->change_directory(DoubleDrive::FileListItem->new(path => path($dir)));
+    $right->change_directory(DoubleDrive::FileListItem->new(path => path($dir)));
     flush_tickit;
 
     # Move to file1
@@ -282,8 +283,8 @@ subtest 'copy is skipped when destination is inside source' => sub {
     my $left = $app->left_pane();
     my $right = $app->right_pane();
 
-    $left->change_directory(path($dir));
-    $right->change_directory(path($dir, 'foo', 'sub'));
+    $left->change_directory(DoubleDrive::FileListItem->new(path => path($dir)));
+    $right->change_directory(DoubleDrive::FileListItem->new(path => path($dir, 'foo', 'sub')));
     flush_tickit;
 
     # Move to foo directory in left pane (.. is index 0)
