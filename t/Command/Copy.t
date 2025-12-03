@@ -160,8 +160,9 @@ subtest 'single file copy without overwrite' => sub {
     ok $future->is_ready, 'future completes';
     is $confirm_called, 0, 'on_confirm was not called (no overwrite)';
     is $copy_called, 1, 'copy_files was called';
-    is $copied_files, [$file], 'FileManipulator called with correct files';
-    is $dest_path->stringify, '/dest', 'destination path is correct';
+    is scalar(@$copied_files), 1, 'one file copied';
+    is $copied_files->[0]->path->stringify, $file->stringify, 'FileManipulator called with correct file';
+    is $dest_path->path->stringify, '/dest', 'destination path is correct';
     is $opposite_pane->reload_called, 1, 'reload_directory was called';
 };
 

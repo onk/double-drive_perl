@@ -76,8 +76,15 @@ sub mock_path ($name) {
     package DoubleDrive::Test::Mock::MockPane;
     sub new($class, %args) {
         my $path = $args{current_path} // DoubleDrive::Test::Mock::MockPath->new('/tmp');
+        my $files = $args{files} // [];
+
+        # Wrap MockPath objects in FileListItem
+        my $file_items = [map {
+            DoubleDrive::FileListItem->new(path => $_)
+        } @$files];
+
         bless {
-            files => $args{files} // [],
+            files => $file_items,
             current_path => DoubleDrive::FileListItem->new(path => $path),
             reload_called => 0,
         }, $class;

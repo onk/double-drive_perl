@@ -5,25 +5,29 @@ use experimental 'class';
 class DoubleDrive::FileManipulator {
     use File::Copy::Recursive qw(rcopy);
 
-    sub overwrite_targets ($class, $files, $dest_path) {
+    sub overwrite_targets ($class, $file_items, $dest_item) {
         my $existing = [];
+        my $dest_path = $dest_item->path;
 
-        for my $file (@$files) {
+        for my $item (@$file_items) {
+            my $file = $item->path;
             my $dest_file = $dest_path->child($file->basename);
             my $dest_str  = $dest_file->stringify;
 
             # -e misses broken symlinks; include -l to catch them
-            push @$existing, $file->basename if (-e $dest_str || -l $dest_str);
+            push @$existing, $item->basename if (-e $dest_str || -l $dest_str);
         }
 
         return $existing;
     }
 
-    sub copy_into_self ($class, $files, $dest_path) {
+    sub copy_into_self ($class, $file_items, $dest_item) {
+        my $dest_path = $dest_item->path;
         my $dest_abs = $dest_path->realpath;
         my $dest_str = $dest_abs->stringify;
 
-        for my $file (@$files) {
+        for my $item (@$file_items) {
+            my $file = $item->path;
             my $file_str = $file->stringify;
             next if -l $file_str;  # treat symlinks as files, not directories
             next unless $file->is_dir;
@@ -41,10 +45,12 @@ class DoubleDrive::FileManipulator {
         return false;
     }
 
-    sub copy_files ($class, $files, $dest_path) {
+    sub copy_files ($class, $file_items, $dest_item) {
         my $failed = [];
+        my $dest_path = $dest_item->path;
 
-        for my $file (@$files) {
+        for my $item (@$file_items) {
+            my $file = $item->path;
             try {
                 my $dest_file = $dest_path->child($file->basename);
                 my $file_str = $file->stringify;
@@ -68,17 +74,18 @@ class DoubleDrive::FileManipulator {
                     $file->copy($dest_file);
                 }
             } catch ($e) {
-                push @$failed, { file => $file->basename, error => $e };
+                push @$failed, { file => $item->basename, error => $e };
             }
         }
 
         return $failed;
     }
 
-    sub delete_files ($class, $files) {
+    sub delete_files ($class, $file_items) {
         my $failed = [];
 
-        for my $file (@$files) {
+        for my $item (@$file_items) {
+            my $file = $item->path;
             try {
                 if (-l $file->stringify) {
                     $file->remove;
@@ -88,7 +95,7 @@ class DoubleDrive::FileManipulator {
                     $file->remove;
                 }
             } catch ($e) {
-                push @$failed, { file => $file->basename, error => $e };
+                push @$failed, { file => $item->basename, error => $e };
             }
         }
 

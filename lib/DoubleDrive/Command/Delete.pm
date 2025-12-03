@@ -3,7 +3,6 @@ use utf8;
 use experimental 'class';
 
 class DoubleDrive::Command::Delete {
-    use DoubleDrive::TextUtil qw(display_name);
     use DoubleDrive::FileManipulator;
     use Future;
     use Future::AsyncAwait;
@@ -30,13 +29,13 @@ class DoubleDrive::Command::Delete {
     }
 
     async method _execute_async() {
-        my $files = $active_pane->get_files_to_operate();
-        return unless @$files;
+        my $file_items = $active_pane->get_files_to_operate();
+        return unless @$file_items;
 
-        my $message = $self->_build_message($files);
+        my $message = $self->_build_message($file_items);
         try {
             await $on_confirm->($message, 'Confirm');
-            await $self->_perform_future($files);
+            await $self->_perform_future($file_items);
         }
         catch ($e) {
             return if $self->_is_cancelled($e);
@@ -44,9 +43,9 @@ class DoubleDrive::Command::Delete {
         }
     }
 
-    method _build_message($files) {
-        my $count = scalar(@$files);
-        my $file_list = join(", ", map { display_name($_->basename) } @$files);
+    method _build_message($file_items) {
+        my $count = scalar(@$file_items);
+        my $file_list = join(", ", map { $_->basename } @$file_items);
         return $count == 1
             ? "Delete $file_list?"
             : "Delete $count files ($file_list)?";
@@ -58,15 +57,15 @@ class DoubleDrive::Command::Delete {
         return "$e" =~ /^cancelled\b/;
     }
 
-    async method _perform_future($files) {
-        my $failed = DoubleDrive::FileManipulator->delete_files($files);
+    async method _perform_future($file_items) {
+        my $failed = DoubleDrive::FileManipulator->delete_files($file_items);
 
         # Reload directory after deletion
         $active_pane->reload_directory();
 
         if (@$failed) {
             my $error_msg = "Failed to delete:\n" .
-                join("\n", map { "- " . display_name($_->{file}) . ": $_->{error}" } @$failed);
+                join("\n", map { "- $_->{file}: $_->{error}" } @$failed);
             await $on_alert->($error_msg, 'Error');
         }
     }

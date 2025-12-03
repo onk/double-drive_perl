@@ -207,9 +207,9 @@ class DoubleDrive::Pane {
         my $selected_items = [grep { $_->is_selected } @$files];
 
         if (@$selected_items) {
-            return [map { $_->path } @$selected_items];
+            return $selected_items;
         } else {
-            return [$files->[$selected_index]->path];
+            return [$files->[$selected_index]];
         }
     }
 

@@ -3,7 +3,6 @@ use utf8;
 use experimental 'class';
 
 class DoubleDrive::Command::Copy {
-    use DoubleDrive::TextUtil qw(display_name);
     use DoubleDrive::FileManipulator;
     use Future;
     use Future::AsyncAwait;
@@ -32,21 +31,21 @@ class DoubleDrive::Command::Copy {
     }
 
     async method _execute_async() {
-        my $files = $active_pane->get_files_to_operate();
-        return unless @$files;
+        my $file_items = $active_pane->get_files_to_operate();
+        return unless @$file_items;
 
         return if $self->_guard_same_directory();
-        return if $self->_guard_copy_into_self($files);
+        return if $self->_guard_copy_into_self($file_items);
 
-        my $dest_path = $opposite_pane->current_path->path;
-        my $existing_files = DoubleDrive::FileManipulator->overwrite_targets($files, $dest_path);
+        my $dest_item = $opposite_pane->current_path;
+        my $existing_files = DoubleDrive::FileManipulator->overwrite_targets($file_items, $dest_item);
 
         try {
             if (@$existing_files) {
-                my $message = $self->_build_overwrite_message($files, $existing_files);
+                my $message = $self->_build_overwrite_message($file_items, $existing_files);
                 await $on_confirm->($message, 'Confirm');
             }
-            await $self->_perform_future($files);
+            await $self->_perform_future($file_items);
         }
         catch ($e) {
             return if $self->_is_cancelled($e);
@@ -66,10 +65,10 @@ class DoubleDrive::Command::Copy {
         return false;
     }
 
-    method _guard_copy_into_self($files) {
-        my $dest_path = $opposite_pane->current_path->path;
+    method _guard_copy_into_self($file_items) {
+        my $dest_item = $opposite_pane->current_path;
 
-        if (DoubleDrive::FileManipulator->copy_into_self($files, $dest_path)) {
+        if (DoubleDrive::FileManipulator->copy_into_self($file_items, $dest_item)) {
             $on_status_change->("Copy skipped: destination is inside source");
             return true;
         }
@@ -77,10 +76,10 @@ class DoubleDrive::Command::Copy {
         return false;
     }
 
-    method _build_overwrite_message($files, $existing_files) {
-        my $count = scalar(@$files);
-        my $file_list = join(", ", map { display_name($_->basename) } @$files);
-        my $existing_list = join(", ", map { display_name($_) } @$existing_files);
+    method _build_overwrite_message($file_items, $existing_files) {
+        my $count = scalar(@$file_items);
+        my $file_list = join(", ", map { $_->basename } @$file_items);
+        my $existing_list = join(", ", @$existing_files);
 
         if ($count == 1) {
             return "Overwrite $existing_list?";
@@ -96,16 +95,16 @@ class DoubleDrive::Command::Copy {
         return "$e" =~ /^cancelled\b/;
     }
 
-    async method _perform_future($files) {
-        my $dest_path = $opposite_pane->current_path->path;
-        my $failed = DoubleDrive::FileManipulator->copy_files($files, $dest_path);
+    async method _perform_future($file_items) {
+        my $dest_item = $opposite_pane->current_path;
+        my $failed = DoubleDrive::FileManipulator->copy_files($file_items, $dest_item);
 
         # Reload destination pane directory
         $opposite_pane->reload_directory();
 
         if (@$failed) {
             my $error_msg = "Failed to copy:\n" .
-                join("\n", map { "- " . display_name($_->{file}) . ": $_->{error}" } @$failed);
+                join("\n", map { "- $_->{file}: $_->{error}" } @$failed);
             await $on_alert->($error_msg, 'Error');
         }
     }

@@ -74,7 +74,8 @@ subtest 'single file deletion - message and execution' => sub {
     ok $future->is_ready, 'future completes';
     is $confirm_message, 'Delete test.txt?', 'correct message for single file';
     is $delete_called, 1, 'delete_files was called';
-    is $deleted_files, [$file], 'FileManipulator called with correct files';
+    is scalar(@$deleted_files), 1, 'one file deleted';
+    is $deleted_files->[0]->path->stringify, $file->stringify, 'FileManipulator called with correct file';
     is $pane->reload_called, 1, 'reload_directory was called';
 };
 
