@@ -137,7 +137,6 @@ class DoubleDrive::App {
             },
             on_execute => sub ($query) {
                 # Keep search results for n/N navigation
-                $active_pane->_render_status_bar();
             },
             on_cancel => sub {
                 $active_pane->clear_search();
@@ -148,6 +147,8 @@ class DoubleDrive::App {
     method exit_cmdline_mode() {
         $key_dispatcher->exit_command_line_mode();
         $self->_cleanup_cmdline_handler();
+        # Return control to active pane (redraw status bar and file list)
+        $active_pane->_render();
     }
 
     method _cleanup_cmdline_handler() {
