@@ -84,10 +84,8 @@ class DoubleDrive::Pane {
 
             my $is_cursor = ($is_active && $index == $selected_index);
             push @$rows, {
-                path       => $item->path,
-                is_cursor  => $is_cursor,
-                is_selected => $item->is_selected,
-                is_match   => $item->is_match,
+                item      => $item,
+                is_cursor => $is_cursor,
             };
         }
 

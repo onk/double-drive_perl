@@ -1,10 +1,19 @@
 use v5.42;
 use utf8;
 use Test2::V0;
+use POSIX qw(tzset);
+use lib 't/lib';
+use DoubleDrive::Test::Time qw(sub_at);
 use Path::Tiny;
 use File::Temp qw(tempdir);
 
+use lib 'lib';
 use DoubleDrive::FileListItem;
+
+BEGIN {
+    $ENV{TZ} = 'UTC';
+    tzset();
+}
 
 subtest 'construction' => sub {
     my $path = path('/tmp/test.txt');
@@ -88,6 +97,62 @@ subtest 'NFC normalization' => sub {
     my $expected_nfc = NFC('ポ') . '.txt';  # ポ in NFC = U+30DD
     is $base, $expected_nfc, 'NFD -> NFC normalized';
     isnt $base, $nfd_filename, 'not the same as NFD input';
+};
+
+subtest 'format_size' => sub {
+    my $tempdir = path(tempdir(CLEANUP => 1));
+    my $file = $tempdir->child('test.txt');
+
+    $file->spew('x' x 1024);
+    my @children = $tempdir->children;
+    my $item = DoubleDrive::FileListItem->new(path => $children[0]);
+
+    is $item->format_size, '   1.0K', 'formats 1KB file';
+
+    $file->spew('x' x 100);
+    @children = $tempdir->children;
+    $item = DoubleDrive::FileListItem->new(path => $children[0]);
+    is $item->format_size, ' 100.0B', 'formats bytes';
+};
+
+subtest 'format_mtime' => sub_at {
+    my $tempdir = path(tempdir(CLEANUP => 1));
+    my $file = $tempdir->child('test.txt');
+    $file->spew('test');
+
+    # Set mtime to 2025-01-15 10:30:00 (within one year)
+    utime 1_736_937_000, 1_736_937_000, $file->stringify;
+
+    my @children = $tempdir->children;
+    my $item = DoubleDrive::FileListItem->new(path => $children[0]);
+
+    is $item->format_mtime, '01/15 10:30', 'recent file shows month/day time';
+
+    # Set mtime to 2021-01-01 (over one year ago)
+    utime 1_609_459_200, 1_609_459_200, $file->stringify;
+
+    @children = $tempdir->children;
+    $item = DoubleDrive::FileListItem->new(path => $children[0]);
+
+    is $item->format_mtime, '2021-01-01', 'old file shows date only';
+} '2025-01-15T10:30:00Z';
+
+subtest 'format_name' => sub {
+    my $tempdir = path(tempdir(CLEANUP => 1));
+    my $file = $tempdir->child('test.txt');
+    $file->spew('test');
+
+    my @children = $tempdir->children;
+    my $item = DoubleDrive::FileListItem->new(path => $children[0]);
+
+    is $item->format_name(10), 'test.txt  ', 'pads short name';
+    is $item->format_name(8), 'test.txt', 'exact fit';
+    is $item->format_name(5), 'te...', 'truncates long name';
+
+    # Test directory with trailing slash
+    my $dir_item = DoubleDrive::FileListItem->new(path => $tempdir);
+    my $formatted = $dir_item->format_name(20);
+    like $formatted, qr{/\s*$}, 'directory has trailing slash followed by padding';
 };
 
 done_testing;
