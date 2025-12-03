@@ -87,7 +87,7 @@ class DoubleDrive::Pane {
             my $file = $files->[$index];
 
             my $is_selected_file = exists $selected_files->{$file->stringify};
-            my $is_cursor = ($index == $selected_index);
+            my $is_cursor = ($is_active && $index == $selected_index);
             push @$rows, {
                 path       => $file,
                 is_cursor  => $is_cursor,
@@ -161,6 +161,7 @@ class DoubleDrive::Pane {
     method set_active($active) {
         $is_active = $active;
         $widget->set_style(linetype => $is_active ? "double" : "single");
+        $self->_render();
         $self->_notify_status_change();
     }
 

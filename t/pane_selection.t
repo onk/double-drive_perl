@@ -24,6 +24,7 @@ subtest 'toggle_selection marks file and moves cursor down' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
+        is_active => 1,
         on_status_change => sub {}
     );
 
@@ -43,6 +44,7 @@ subtest 'toggle_selection on cursor shows >* indicator' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
+        is_active => 1,
         on_status_change => sub {}
     );
 
@@ -63,6 +65,7 @@ subtest 'toggle_selection twice deselects file' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
+        is_active => 1,
         on_status_change => sub {}
     );
 

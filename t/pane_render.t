@@ -28,6 +28,7 @@ subtest 'initial render shows sorted files' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
+        is_active => 1,
         on_status_change => sub {}
     );
     ok @$texts, 'render called on init';
@@ -42,6 +43,7 @@ subtest 'empty directory shows placeholder' => sub {
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
+        is_active => 1,
         on_status_change => sub {}
     );
     ok @$texts, 'render called on init for empty dir';
@@ -55,6 +57,7 @@ subtest 'selection moves and stops at bounds' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
+        is_active => 1,
         on_status_change => sub {}
     );
 
@@ -75,6 +78,7 @@ subtest 'change_directory to parent reselects previous directory entry' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
+        is_active => 1,
         on_status_change => sub {}
     );
 
@@ -99,6 +103,7 @@ subtest 'enter_selected descends into directory and resets selection' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
+        is_active => 1,
         on_status_change => sub {}
     );
     $pane->move_selection(1);    # select subdir (file_before is index 0)
@@ -116,6 +121,7 @@ subtest 'reload_directory preserves cursor position' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
+        is_active => 1,
         on_status_change => sub {}
     );
 
@@ -140,6 +146,7 @@ subtest 'reload_directory updates index when earlier file is deleted' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
+        is_active => 1,
         on_status_change => sub {}
     );
 
@@ -169,6 +176,7 @@ subtest 'reload_directory keeps similar position when cursor file is deleted' =>
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
+        is_active => 1,
         on_status_change => sub {}
     );
 
