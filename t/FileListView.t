@@ -60,6 +60,8 @@ subtest '_rows_to_lines() - file without stat' => sub {
 subtest '_rows_to_lines() - formatted snapshot' => sub_at {
     my $view = DoubleDrive::FileListView->new;
     my $highlight_pen = DoubleDrive::FileListView::HIGHLIGHT_PEN;
+    my $cursor_pen = DoubleDrive::FileListView::CURSOR_PEN;
+    my $cursor_highlight_pen = DoubleDrive::FileListView::CURSOR_HIGHLIGHT_PEN;
 
     my $mock_file = mock 'Path::Tiny' => (
         override => [
@@ -106,10 +108,10 @@ subtest '_rows_to_lines() - formatted snapshot' => sub_at {
     my $lines = $view->_rows_to_lines($rows, 50);
     is $lines, [
         { text => '  test.txt                      1.0K  01/15 10:30', pen => undef },
-        { text => '> cursor.txt                    1.0K  01/15 10:30', pen => undef },
+        { text => '> cursor.txt                    1.0K  01/15 10:30', pen => $cursor_pen },
         { text => ' *selected.txt                  1.0K  01/15 10:30', pen => undef },
         { text => '  match.txt                     1.0K  01/15 10:30', pen => $highlight_pen },
-        { text => '>*hit.txt                       1.0K  01/15 10:30', pen => $highlight_pen },
+        { text => '>*hit.txt                       1.0K  01/15 10:30', pen => $cursor_highlight_pen },
         { text => '  this-is-a-very-long-fil...    1.0K  01/15 10:30', pen => undef },
         { text => '  mydir/                        4.0K  01/15 10:30', pen => undef },
     ], 'selector markers, highlight pen, and dir slash in one snapshot';

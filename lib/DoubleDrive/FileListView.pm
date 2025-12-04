@@ -4,7 +4,9 @@ use utf8;
 use parent 'Tickit::Widget::Static';
 
 use Tickit::Pen;
-use constant HIGHLIGHT_PEN => Tickit::Pen->new(fg => "hi-yellow");
+use constant HIGHLIGHT_PEN        => Tickit::Pen->new(fg => "hi-yellow");
+use constant CURSOR_PEN           => Tickit::Pen->new(bg => "blue", fg => "white");
+use constant CURSOR_HIGHLIGHT_PEN => Tickit::Pen->new(bg => "blue", fg => "hi-yellow");
 
 # Request minimal width - this allows HBox to distribute width evenly
 sub cols ($self) { 1 }
@@ -54,7 +56,10 @@ sub _rows_to_lines ($self, $rows, $cols) {
             $text = $selector . $formatted_name;
         }
 
-        my $pen = $item->is_match ? HIGHLIGHT_PEN : undef;
+        my $pen = $row->{is_cursor} && $item->is_match ? CURSOR_HIGHLIGHT_PEN
+                : $row->{is_cursor}                    ? CURSOR_PEN
+                : $item->is_match                      ? HIGHLIGHT_PEN
+                :                                        undef;
         push @$lines, { text => $text, pen => $pen };
     }
 
