@@ -23,7 +23,6 @@ class DoubleDrive::Pane {
 
     # Search state
     field $last_search_query = "";
-    field $last_search_matches = [];      # File paths (strings) that match last query
     field $last_match_pos;                # Last position in match list (1-indexed)
 
     ADJUST {
@@ -125,7 +124,6 @@ class DoubleDrive::Pane {
         # _load_directory() creates new FileListItem objects, so is_match flags
         # will be reset automatically.
         $last_search_query = "";
-        $last_search_matches = [];
         $last_match_pos = undef;
 
         $self->_load_directory();
@@ -253,16 +251,16 @@ class DoubleDrive::Pane {
         $last_search_query = $query;
         $self->_update_matches();
 
-        if (@$last_search_matches) {
-            my $first_idx = $self->_find_file_index($last_search_matches->[0]);
-            $selected_index = $first_idx if defined $first_idx;
+        my $match_indices = $self->_get_match_indices();
+        if (@$match_indices) {
+            $selected_index = $match_indices->[0];
             $last_match_pos = 1;  # Set initial position to first match
         } else {
             $last_match_pos = undef;  # Clear position if no matches
         }
 
         $self->_render();
-        return scalar(@$last_search_matches);  # Return match count for caller to display
+        return scalar(@$match_indices);  # Return match count for caller to display
     }
 
     method clear_search() {
@@ -270,34 +268,28 @@ class DoubleDrive::Pane {
     }
 
     method next_match() {
-        return if @$last_search_matches == 0;
-
-        my $indices = [map { $self->_find_file_index($_) // () } @$last_search_matches];
-        return unless @$indices;
+        my $indices = $self->_get_match_indices();
+        return if @$indices == 0;
 
         my $next = first { $_ > $selected_index } @$indices;
         $selected_index = $next // $indices->[0];
 
         # Update last match position
-        my $current_file = $files->[$selected_index]->stringify;
-        my $idx = firstidx { $_ eq $current_file } @$last_search_matches;
+        my $idx = firstidx { $_ == $selected_index } @$indices;
         $last_match_pos = $idx + 1 if $idx >= 0;
 
         $self->_render();
     }
 
     method prev_match() {
-        return if @$last_search_matches == 0;
-
-        my $indices = [map { $self->_find_file_index($_) // () } @$last_search_matches];
-        return unless @$indices;
+        my $indices = $self->_get_match_indices();
+        return if @$indices == 0;
 
         my $prev = first { $_ < $selected_index } reverse @$indices;
         $selected_index = $prev // $indices->[-1];
 
         # Update last match position
-        my $current_file = $files->[$selected_index]->stringify;
-        my $idx = firstidx { $_ eq $current_file } @$last_search_matches;
+        my $idx = firstidx { $_ == $selected_index } @$indices;
         $last_match_pos = $idx + 1 if $idx >= 0;
 
         $self->_render();
@@ -309,8 +301,6 @@ class DoubleDrive::Pane {
             $item->set_match(false);
         }
 
-        $last_search_matches = [];
-
         return if $last_search_query eq "";
 
         my $query_lc = fc($last_search_query);
@@ -318,9 +308,16 @@ class DoubleDrive::Pane {
         for my $item (@$files) {
             if (index(fc($item->basename), $query_lc) >= 0) {
                 $item->set_match(true);
-                push @$last_search_matches, $item->stringify;
             }
         }
+    }
+
+    method _get_match_indices() {
+        my $indices = [];
+        for my ($i, $item) (indexed @$files) {
+            push @$indices, $i if $item->is_match;
+        }
+        return $indices;
     }
 
     method _find_file_index($path_str) {
@@ -333,8 +330,9 @@ class DoubleDrive::Pane {
     method get_search_status() {
         # Return search status for display after search mode exits
         # (During search mode, DoubleDrive manages the status bar directly)
-        if ($last_search_query ne "" && @$last_search_matches) {
-            my $total = scalar(@$last_search_matches);
+        my $match_indices = $self->_get_match_indices();
+        if ($last_search_query ne "" && @$match_indices) {
+            my $total = scalar(@$match_indices);
             return " [search: $last_search_query ($last_match_pos/$total)]";
         }
         return "";
