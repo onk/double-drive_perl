@@ -137,6 +137,31 @@ subtest 'clear_search resets all state' => sub {
     is $pane->selected_index, $initial_index, 'n does nothing after clear';
 };
 
+subtest 'clear_search clears is_match flags' => sub {
+    my $dir = temp_dir_with_files('apple.txt', 'banana.txt', 'cherry.txt');
+
+    my $pane = DoubleDrive::Pane->new(
+        path => $dir,
+        is_active => 1,
+        on_status_change => sub {}
+    );
+
+    # Search for 'a' - should match apple and banana
+    $pane->update_search('a');
+
+    # Verify some items have is_match = true
+    my $files = $pane->files;
+    my @matched = grep { $_->is_match } @$files;
+    is scalar(@matched), 2, 'two files marked as match after search';
+
+    # Clear search
+    $pane->clear_search();
+
+    # Verify all items have is_match = false
+    @matched = grep { $_->is_match } @$files;
+    is scalar(@matched), 0, 'no files marked as match after clear';
+};
+
 subtest 'change_directory clears search state' => sub {
     my $dir = temp_dir_with_files('subdir/file.txt', 'apple.txt');
 

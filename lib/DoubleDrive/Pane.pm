@@ -15,7 +15,7 @@ class DoubleDrive::Pane {
     field $on_status_change :param;
     field $is_active :param :reader = false;  # :reader for testing
     field $current_path :reader;     # Current directory as FileListItem object (:reader for testing)
-    field $files = [];               # Array of FileListItem objects
+    field $files :reader = [];       # Array of FileListItem objects (:reader for testing)
     field $selected_index :reader = 0;  # :reader for testing
     field $scroll_offset = 0;        # First visible item index
     field $widget :reader;
@@ -121,6 +121,9 @@ class DoubleDrive::Pane {
         $widget->set_title($current_path->stringify);
 
         # Clear search state when changing directories
+        # Note: We don't call clear_search() here to avoid double rendering.
+        # _load_directory() creates new FileListItem objects, so is_match flags
+        # will be reset automatically.
         $last_search_query = "";
         $last_search_matches = [];
         $last_match_pos = undef;
@@ -263,10 +266,7 @@ class DoubleDrive::Pane {
     }
 
     method clear_search() {
-        $last_search_query = "";
-        $last_search_matches = [];
-        $last_match_pos = undef;
-        $self->_render();
+        $self->update_search("");
     }
 
     method next_match() {
