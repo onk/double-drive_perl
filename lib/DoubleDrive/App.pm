@@ -12,6 +12,7 @@ class DoubleDrive::App {
     use DoubleDrive::CommandContext;
     use DoubleDrive::ConfirmDialog;
     use DoubleDrive::AlertDialog;
+    use DoubleDrive::SortDialog;
     use Future::AsyncAwait;
 
     field $tickit;
@@ -78,6 +79,7 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal('n' => sub { $active_pane->next_match() });
         $key_dispatcher->bind_normal('N' => sub { $active_pane->prev_match() });
         $key_dispatcher->bind_normal('Escape' => sub { $active_pane->clear_search() });
+        $key_dispatcher->bind_normal('s' => sub { $self->show_sort_dialog() });
     }
 
     # Search-specific command line mode
@@ -162,6 +164,24 @@ class DoubleDrive::App {
         )->show();
 
         return await $f;
+    }
+
+    method show_sort_dialog() {
+        my $scope = $key_dispatcher->dialog_scope;
+
+        DoubleDrive::SortDialog->new(
+            tickit => $tickit,
+            float_box => $float_box,
+            key_scope => $scope,
+            title => 'Sort by',
+            message => 'Select sort order:',
+            on_select => sub ($sort_key) {
+                $active_pane->set_sort($sort_key);
+            },
+            on_cancel => sub {
+                # Just close dialog, no action needed
+            },
+        )->show();
     }
 
     method run() {

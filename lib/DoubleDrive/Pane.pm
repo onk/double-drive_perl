@@ -25,6 +25,9 @@ class DoubleDrive::Pane {
     field $last_search_query = "";
     field $last_match_pos;                # Last position in match list (1-indexed)
 
+    # Sort state
+    field $sort_key = 'name';             # Current sort key: 'name', 'size', 'mtime', 'ext'
+
     ADJUST {
         $current_path = DoubleDrive::FileListItem->new(path => path($path)->realpath);
         $self->_build_widget();
@@ -42,8 +45,22 @@ class DoubleDrive::Pane {
     }
 
     method _load_directory() {
-        # Get all entries as FileListItem, and sort by NFC normalized basename
-        $files = [sort { fc($a->basename) cmp fc($b->basename) } @{$current_path->children}];
+        # Get all entries as FileListItem, and sort according to current sort_key
+        $files = $self->_sort_files($current_path->children);
+    }
+
+    method _sort_files($items) {
+        if ($sort_key eq 'size') {
+            return [sort { $b->size <=> $a->size || fc($a->basename) cmp fc($b->basename) } @$items];
+        } elsif ($sort_key eq 'mtime') {
+            return [sort { $b->mtime <=> $a->mtime || fc($a->basename) cmp fc($b->basename) } @$items];
+        } elsif ($sort_key eq 'ext') {
+            return [sort {
+                fc($a->extname) cmp fc($b->extname) || fc($a->basename) cmp fc($b->basename)
+            } @$items];
+        } else {  # 'name' is default
+            return [sort { fc($a->basename) cmp fc($b->basename) } @$items];
+        }
     }
 
     method after_window_attached() {
@@ -353,5 +370,29 @@ class DoubleDrive::Pane {
             return "~" . $relative;
         }
         return $path_str;
+    }
+
+    method set_sort($new_sort_key) {
+        return if $sort_key eq $new_sort_key;  # No change needed
+
+        # Remember current file for repositioning cursor
+        my $current_file_path = @$files ? $files->[$selected_index]->stringify : undef;
+
+        $sort_key = $new_sort_key;
+        $self->_load_directory();
+
+        # Try to keep cursor on the same file after resorting
+        if (@$files && defined $current_file_path) {
+            my $new_index;
+            for my ($i, $file) (indexed @$files) {
+                if ($file->stringify eq $current_file_path) {
+                    $new_index = $i;
+                    last;
+                }
+            }
+            $selected_index = $new_index if defined $new_index;
+        }
+
+        $self->_render();
     }
 }

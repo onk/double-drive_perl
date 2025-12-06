@@ -1,6 +1,7 @@
 use v5.42;
 use utf8;
 use Test2::V0;
+use Test2::Tools::Mock qw(mock);
 use POSIX qw(tzset);
 use lib 't/lib';
 use DoubleDrive::Test::Time qw(sub_at);
@@ -153,6 +154,98 @@ subtest 'format_name' => sub {
     my $dir_item = DoubleDrive::FileListItem->new(path => $tempdir);
     my $formatted = $dir_item->format_name(20);
     like $formatted, qr{/\s*$}, 'directory has trailing slash followed by padding';
+};
+
+subtest 'size' => sub {
+    subtest 'returns file size from stat' => sub {
+        # Create a mock stat object with size method
+        my $stat_double = mock {} => (
+            add => [
+                size => sub { 1024 },
+            ],
+        );
+
+        my $mock_path = mock 'Path::Tiny' => (
+            override => [
+                stat => sub { $stat_double },
+                basename => sub { 'test.txt' },
+                stringify => sub { '/fake/test.txt' },
+            ],
+        );
+
+        my $item = DoubleDrive::FileListItem->new(path => path('/fake/test.txt'));
+        is $item->size, 1024, 'returns file size from stat';
+    };
+
+    subtest 'returns 0 for missing file' => sub {
+        # Test missing file (stat throws exception)
+        my $missing = DoubleDrive::FileListItem->new(path => path('/fake/missing.txt'));
+        is $missing->size, 0, 'returns 0 for missing file';
+    };
+};
+
+subtest 'mtime' => sub {
+    subtest 'returns modification time from stat' => sub {
+        # Create a mock stat object with mtime method
+        my $expected_mtime = 1_609_459_200;  # 2021-01-01
+        my $stat_double = mock {} => (
+            add => [
+                mtime => sub { $expected_mtime },
+            ],
+        );
+
+        my $mock_path = mock 'Path::Tiny' => (
+            override => [
+                stat => sub { $stat_double },
+                basename => sub { 'test.txt' },
+                stringify => sub { '/fake/test.txt' },
+            ],
+        );
+
+        my $item = DoubleDrive::FileListItem->new(path => path('/fake/test.txt'));
+        is $item->mtime, $expected_mtime, 'returns modification time from stat';
+    };
+
+    subtest 'returns 0 for missing file' => sub {
+        # Test missing file (stat throws exception)
+        my $missing = DoubleDrive::FileListItem->new(path => path('/fake/missing.txt'));
+        is $missing->mtime, 0, 'returns 0 for missing file';
+    };
+};
+
+subtest 'extname' => sub {
+    my $test_cases = [
+        # [filename, expected_ext, description]
+        ['test.txt',        '.txt',    'regular file with extension'],
+        ['archive.tar.gz',  '.gz',     'file with multiple dots (returns last)'],
+        ['README',          '',        'file without extension'],
+        ['Makefile',        '',        'file without extension (uppercase)'],
+        ['.vimrc',          '',        'dotfile without extension'],
+        ['.bashrc',         '',        'dotfile without extension'],
+        ['.config.yaml',    '.yaml',   'dotfile with extension'],
+        ['.git.ignore',     '.ignore', 'dotfile with extension (multiple dots)'],
+        ['file.',           '.',       'file ending with dot'],
+        ['.',               '',        'dot directory'],
+        ['..',              '',        'double dot directory'],
+        ['a.b.c.d',         '.d',      'multiple extensions (returns last)'],
+        ['foo.TXT',         '.TXT',    'extension with uppercase'],
+        ['bar.HTML',        '.HTML',   'extension with uppercase'],
+    ];
+
+    for my $case (@$test_cases) {
+        my ($filename, $expected, $desc) = @$case;
+
+        # Mock Path::Tiny to return our test filename as basename
+        my $mock_path = mock 'Path::Tiny' => (
+            override => [
+                basename => sub { $filename },
+                stringify => sub { "/fake/path/$filename" },
+            ],
+        );
+
+        my $item = DoubleDrive::FileListItem->new(path => path('/fake'));
+        is $item->extname, $expected, $desc;
+    }
 };
 
 done_testing;

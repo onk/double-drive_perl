@@ -21,7 +21,37 @@ class DoubleDrive::FileListItem {
     }
 
     method is_dir() { $path->is_dir }
-    method stat() { $path->stat }
+    method stat() {
+        try {
+            $path->stat
+        } catch($e) {
+            return undef;
+        }
+    }
+    method size() {
+        my $stat = $self->stat;
+        return $stat ? $stat->size : 0;
+    }
+    method mtime() {
+        my $stat = $self->stat;
+        return $stat ? $stat->mtime : 0;
+    }
+    method extname() {
+        # Special cases: . and .. have no extension
+        return "" if $basename eq '.' || $basename eq '..';
+
+        # Check if it's a dotfile without extension: starts with dot, no other dots
+        if ($basename =~ /^\./ && $basename !~ /\..*\./) {
+            return "";
+        }
+
+        # Match last dot + extension (including empty extension for trailing dot)
+        if ($basename =~ /(\.[^.]*)$/) {
+            return $1;
+        }
+
+        return "";
+    }
     method children() {
         return [map { DoubleDrive::FileListItem->new(path => $_) } $path->children];
     }
