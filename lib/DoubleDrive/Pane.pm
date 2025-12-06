@@ -105,6 +105,13 @@ class DoubleDrive::Pane {
         }
     }
 
+    method move_cursor_top() {
+        $self->move_cursor(-$selected_index);
+    }
+    method move_cursor_bottom() {
+        $self->move_cursor($#$files - $selected_index);
+    }
+
     method change_directory($new_path) {
         my $previous_path = $current_path;
 
