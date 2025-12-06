@@ -37,7 +37,7 @@ class DoubleDrive::Pane {
 
         $widget = Tickit::Widget::Frame->new(
             style => { linetype => "single" },
-            title => $current_path->stringify,
+            title => $self->_format_path_title($current_path->stringify),
         )->set_child($file_list_view);
     }
 
@@ -124,7 +124,7 @@ class DoubleDrive::Pane {
         }
         $selected_index = 0;
         $scroll_offset = 0;
-        $widget->set_title($current_path->stringify);
+        $widget->set_title($self->_format_path_title($current_path->stringify));
 
         # Clear search state when changing directories
         # Note: We don't call clear_search() here to avoid double rendering.
@@ -343,5 +343,15 @@ class DoubleDrive::Pane {
             return " [search: $last_search_query ($last_match_pos/$total)]";
         }
         return "";
+    }
+
+    method _format_path_title($path_str) {
+        # Replace home directory with ~ to shorten display
+        my $home = path("~")->absolute->stringify;
+        if (index($path_str, $home) == 0) {
+            my $relative = substr($path_str, length($home));
+            return "~" . $relative;
+        }
+        return $path_str;
     }
 }
