@@ -63,12 +63,12 @@ subtest 'selection moves and stops at bounds' => sub {
     );
 
     @$texts = ();
-    $pane->move_selection(1);
+    $pane->move_cursor(1);
     my @lines = split /\n/, $texts->[-1];
     is $lines[0], '  file          0.0B  01/15 10:30', 'first file now unselected';
     is $lines[1], '> file2         0.0B  01/15 10:30', 'second file is selected';
 
-    $pane->move_selection(10); # out of range
+    $pane->move_cursor(10); # out of range
     is scalar(@$texts), 1, 'no extra render when selection would go out of bounds';
 };
 
@@ -84,7 +84,7 @@ subtest 'change_directory to parent reselects previous directory entry' => sub {
     );
 
     # Move to subdir (index 1) and enter it
-    $pane->move_selection(1);
+    $pane->move_cursor(1);
     @$texts = ();
     $pane->enter_selected();
 
@@ -107,7 +107,7 @@ subtest 'enter_selected descends into directory and resets selection' => sub {
         is_active => 1,
         on_status_change => sub {}
     );
-    $pane->move_selection(1);    # select subdir (file_before is index 0)
+    $pane->move_cursor(1);    # select subdir (file_before is index 0)
     $pane->enter_selected();
 
     my @lines = split /\n/, $texts->[-1];
@@ -127,7 +127,7 @@ subtest 'reload_directory preserves cursor position' => sub {
     );
 
     # Move to file3 (index 2: file1, file2, file3, file4)
-    $pane->move_selection(2);
+    $pane->move_cursor(2);
     @$texts = ();
 
     # Reload directory
@@ -152,7 +152,7 @@ subtest 'reload_directory updates index when earlier file is deleted' => sub {
     );
 
     # State: [file1, file2, > file3, file4] (selected_index = 2)
-    $pane->move_selection(2);
+    $pane->move_cursor(2);
     is $pane->selected_index, 2, 'cursor on file3 at index 2';
 
     # Delete file1
@@ -182,7 +182,7 @@ subtest 'reload_directory keeps similar position when cursor file is deleted' =>
     );
 
     # Move to file3 (index 2)
-    $pane->move_selection(2);
+    $pane->move_cursor(2);
 
     # Delete file3 (the cursor file)
     path("$dir/file3")->remove;

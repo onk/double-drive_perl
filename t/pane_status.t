@@ -24,7 +24,7 @@ subtest 'status_text returns formatted status' => sub {
     like $status_text, qr/\[1\/2\]/, 'status contains position info (1 of 2: file1, file2)';
 };
 
-subtest 'status callback is called on move_selection' => sub {
+subtest 'status callback is called on move_cursor' => sub {
     my $dir = temp_dir_with_files('file1.txt', 'file2.txt');
 
     my $callback_called = 0;
@@ -40,7 +40,7 @@ subtest 'status callback is called on move_selection' => sub {
     );
 
     $callback_called = 0;  # Reset after initialization
-    $pane->move_selection(1);
+    $pane->move_cursor(1);
 
     is $callback_called, 1, 'callback called once';
     ok $callback_text, 'callback received text';

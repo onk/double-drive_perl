@@ -94,7 +94,7 @@ class DoubleDrive::Pane {
         $self->_render_status_bar();
     }
 
-    method move_selection($delta) {
+    method move_cursor($delta) {
         return unless @$files;
 
         my $new_index = $selected_index + $delta;
@@ -199,7 +199,7 @@ class DoubleDrive::Pane {
         $self->_render();
 
         # Move cursor down after toggling selection for easy multi-selection
-        $self->move_selection(1);
+        $self->move_cursor(1);
     }
 
     method get_files_to_operate() {

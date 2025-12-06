@@ -53,7 +53,7 @@ subtest 'toggle_selection on cursor shows >* indicator' => sub {
 
     # Move back to selected file
     @$texts = ();
-    $pane->move_selection(-1);
+    $pane->move_cursor(-1);
 
     my @lines = split /\n/, $texts->[-1];
     is $lines[0], '>*file1         0.0B  01/15 10:30', 'file1 shows >* when selected and cursor';
@@ -74,7 +74,7 @@ subtest 'toggle_selection twice deselects file' => sub {
     $pane->toggle_selection(); # selects file1, moves to file2
     @$texts = ();
     # Move back to file1 and toggle again to deselect
-    $pane->move_selection(-1);
+    $pane->move_cursor(-1);
     $pane->toggle_selection(); # deselects file1, moves to file2
 
     my @lines = split /\n/, $texts->[-1];
@@ -130,7 +130,7 @@ subtest 'selection cleared when changing directory' => sub {
     );
 
     # Move to b_file2 (index 1) and select it
-    $pane->move_selection(1);
+    $pane->move_cursor(1);
     $pane->toggle_selection();
 
     my $files_before = $pane->get_files_to_operate();
@@ -138,7 +138,7 @@ subtest 'selection cleared when changing directory' => sub {
     is $files_before->[0]->basename, 'b_file2', 'selected file is b_file2 before dir change';
 
     # Move back to subdir (index 0) and enter it
-    $pane->move_selection(-1);
+    $pane->move_cursor(-1);
     $pane->enter_selected();
 
     # After entering subdir, selections should be cleared
