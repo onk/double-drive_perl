@@ -26,7 +26,7 @@ class DoubleDrive::Pane {
     field $last_match_pos;                # Last position in match list (1-indexed)
 
     ADJUST {
-        $current_path = DoubleDrive::FileListItem->new(path => path($path));
+        $current_path = DoubleDrive::FileListItem->new(path => path($path)->realpath);
         $self->_build_widget();
         $self->_load_directory();
         $self->_render();
@@ -113,7 +113,7 @@ class DoubleDrive::Pane {
             $current_path = $new_path->realpath;
         } else {
             my $path_obj = path($current_path->path, $new_path);
-            $current_path = DoubleDrive::FileListItem->new(path => $path_obj)->realpath;
+            $current_path = DoubleDrive::FileListItem->new(path => $path_obj->realpath);
         }
         $selected_index = 0;
         $scroll_offset = 0;
