@@ -5,8 +5,7 @@ use Test2::Tools::Mock qw(mock);
 use POSIX qw(tzset);
 use lib 't/lib';
 use DoubleDrive::Test::Time qw(sub_at);
-use Path::Tiny;
-use File::Temp qw(tempdir);
+use Path::Tiny qw(path tempdir);
 
 use lib 'lib';
 use DoubleDrive::FileListItem;
@@ -50,7 +49,7 @@ subtest 'set_match' => sub {
 };
 
 subtest 'is_dir and stat' => sub {
-    my $tempdir = tempdir(CLEANUP => 1);
+    my $tempdir = tempdir;
     my $file = path($tempdir)->child('test.txt');
     $file->spew("test");
 
@@ -63,7 +62,7 @@ subtest 'is_dir and stat' => sub {
 };
 
 subtest 'basename and stringify' => sub {
-    my $tempdir = path(tempdir(CLEANUP => 1));
+    my $tempdir = tempdir;
     my $file = $tempdir->child('test.txt');
     $file->touch;
 
@@ -78,7 +77,7 @@ subtest 'basename and stringify' => sub {
 subtest 'NFC normalization' => sub {
     use Unicode::Normalize qw(NFD NFC);
 
-    my $tempdir = path(tempdir(CLEANUP => 1));
+    my $tempdir = tempdir;
 
     # Create filename in NFD form (as macOS does)
     my $nfd_filename = NFD('ポ') . '.txt';  # ポ in NFD = U+30DB + U+309A
@@ -101,7 +100,7 @@ subtest 'NFC normalization' => sub {
 };
 
 subtest 'format_size' => sub {
-    my $tempdir = path(tempdir(CLEANUP => 1));
+    my $tempdir = tempdir;
     my $file = $tempdir->child('test.txt');
 
     $file->spew('x' x 1024);
@@ -117,7 +116,7 @@ subtest 'format_size' => sub {
 };
 
 subtest 'format_mtime' => sub_at {
-    my $tempdir = path(tempdir(CLEANUP => 1));
+    my $tempdir = tempdir;
     my $file = $tempdir->child('test.txt');
     $file->spew('test');
 
@@ -139,7 +138,7 @@ subtest 'format_mtime' => sub_at {
 } '2025-01-15T10:30:00Z';
 
 subtest 'format_name' => sub {
-    my $tempdir = path(tempdir(CLEANUP => 1));
+    my $tempdir = tempdir;
     my $file = $tempdir->child('test.txt');
     $file->spew('test');
 

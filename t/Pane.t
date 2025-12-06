@@ -4,9 +4,8 @@ use lib 'lib';
 
 use Test2::V0;
 use Test2::Tools::Mock qw(mock);
-use File::Temp qw(tempdir);
 
-use Path::Tiny;
+use Path::Tiny qw(path tempdir);
 use Tickit;
 use Tickit::Test qw(mk_term);
 
@@ -93,13 +92,12 @@ subtest 'set_sort' => sub {
     my ($mocks, $widget) = setup_pane_mocks();
 
     # Create a temporary test directory with files
-    my $temp_dir_str = tempdir(CLEANUP => 1);
-    my $temp_dir = path($temp_dir_str);
+    my $tempdir = tempdir;
 
     # Create test files with different sizes and mtimes
-    my $file_a = $temp_dir->child('aaa.txt');
-    my $file_b = $temp_dir->child('bbb.md');
-    my $file_c = $temp_dir->child('ccc.txt');
+    my $file_a = $tempdir->child('aaa.txt');
+    my $file_b = $tempdir->child('bbb.md');
+    my $file_c = $tempdir->child('ccc.txt');
 
     $file_a->spew("x" x 100);   # size: 100
     $file_b->spew("x" x 300);   # size: 300
@@ -114,7 +112,7 @@ subtest 'set_sort' => sub {
     $file_c->touch;  # newest
 
     my $pane = DoubleDrive::Pane->new(
-        path => $temp_dir,
+        path => $tempdir,
         on_status_change => sub { }
     );
 

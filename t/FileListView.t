@@ -6,8 +6,7 @@ use POSIX qw(tzset);
 use lib 't/lib';
 use DoubleDrive::Test::Time qw(sub_at);
 use DoubleDrive::Test::Mock qw(StubStat FIXED_MTIME mock_window mock_rb_and_rect);
-use Path::Tiny qw(path);
-use File::Temp qw(tempdir);
+use Path::Tiny qw(path tempdir);
 
 use lib 'lib';
 use DoubleDrive::FileListView;
@@ -224,7 +223,7 @@ subtest 'render_to_rb()' => sub {
 subtest 'integration - complete formatting flow' => sub_at {
     my $view = DoubleDrive::FileListView->new;
 
-    my $tempdir = tempdir(CLEANUP => 1);
+    my $tempdir = tempdir;
     my $dir = path($tempdir);
     my $file = $dir->child('test.txt');
     $file->spew('content');
