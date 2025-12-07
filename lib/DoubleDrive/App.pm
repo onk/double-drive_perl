@@ -80,6 +80,7 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal('N' => sub { $active_pane->prev_match() });
         $key_dispatcher->bind_normal('Escape' => sub { $active_pane->clear_search() });
         $key_dispatcher->bind_normal('s' => sub { $self->show_sort_dialog() });
+        $key_dispatcher->bind_normal('x' => sub { $self->open_tmux_window() });
     }
 
     # Search-specific command line mode
@@ -182,6 +183,12 @@ class DoubleDrive::App {
                 # Just close dialog, no action needed
             },
         )->show();
+    }
+
+    method open_tmux_window() {
+        my $current_dir = $active_pane->current_path->stringify;
+        system('tmux', 'new-window', '-c', $current_dir);
+        $status_bar->set_text("Opened new tmux window in $current_dir") if $? == 0;
     }
 
     method run() {
