@@ -100,59 +100,116 @@ subtest 'NFC normalization' => sub {
 };
 
 subtest 'format_size' => sub {
-    my $tempdir = tempdir;
-    my $file = $tempdir->child('test.txt');
+    subtest 'formats 1KB file' => sub {
+        my $stat_double = mock {} => (
+            add => [
+                size => sub { 1024 },
+            ],
+        );
 
-    $file->spew('x' x 1024);
-    my @children = $tempdir->children;
-    my $item = DoubleDrive::FileListItem->new(path => $children[0]);
+        my $mock_path = mock 'Path::Tiny' => (
+            override => [
+                stat => sub { $stat_double },
+                basename => sub { 'test.txt' },
+                stringify => sub { '/fake/test.txt' },
+            ],
+        );
 
-    is $item->format_size, '   1.0K', 'formats 1KB file';
+        my $item = DoubleDrive::FileListItem->new(path => path('/fake/test.txt'));
+        is $item->format_size, '   1.0K', 'formats 1KB file';
+    };
 
-    $file->spew('x' x 100);
-    @children = $tempdir->children;
-    $item = DoubleDrive::FileListItem->new(path => $children[0]);
-    is $item->format_size, ' 100.0B', 'formats bytes';
+    subtest 'formats bytes' => sub {
+        my $stat_double = mock {} => (
+            add => [
+                size => sub { 100 },
+            ],
+        );
+
+        my $mock_path = mock 'Path::Tiny' => (
+            override => [
+                stat => sub { $stat_double },
+                basename => sub { 'test.txt' },
+                stringify => sub { '/fake/test.txt' },
+            ],
+        );
+
+        my $item = DoubleDrive::FileListItem->new(path => path('/fake/test.txt'));
+        is $item->format_size, ' 100.0B', 'formats bytes';
+    };
 };
 
 subtest 'format_mtime' => sub_at {
-    my $tempdir = tempdir;
-    my $file = $tempdir->child('test.txt');
-    $file->spew('test');
+    subtest 'recent file shows month/day time' => sub {
+        # mtime: 2025-01-15 10:30:00 (within one year)
+        my $stat_double = mock {} => (
+            add => [
+                mtime => sub { 1_736_937_000 },
+            ],
+        );
 
-    # Set mtime to 2025-01-15 10:30:00 (within one year)
-    utime 1_736_937_000, 1_736_937_000, $file->stringify;
+        my $mock_path = mock 'Path::Tiny' => (
+            override => [
+                stat => sub { $stat_double },
+                basename => sub { 'test.txt' },
+                stringify => sub { '/fake/test.txt' },
+            ],
+        );
 
-    my @children = $tempdir->children;
-    my $item = DoubleDrive::FileListItem->new(path => $children[0]);
+        my $item = DoubleDrive::FileListItem->new(path => path('/fake/test.txt'));
+        is $item->format_mtime, '01/15 10:30', 'recent file shows month/day time';
+    };
 
-    is $item->format_mtime, '01/15 10:30', 'recent file shows month/day time';
+    subtest 'old file shows date only' => sub {
+        # mtime: 2021-01-01 (over one year ago)
+        my $stat_double = mock {} => (
+            add => [
+                mtime => sub { 1_609_459_200 },
+            ],
+        );
 
-    # Set mtime to 2021-01-01 (over one year ago)
-    utime 1_609_459_200, 1_609_459_200, $file->stringify;
+        my $mock_path = mock 'Path::Tiny' => (
+            override => [
+                stat => sub { $stat_double },
+                basename => sub { 'test.txt' },
+                stringify => sub { '/fake/test.txt' },
+            ],
+        );
 
-    @children = $tempdir->children;
-    $item = DoubleDrive::FileListItem->new(path => $children[0]);
-
-    is $item->format_mtime, '2021-01-01', 'old file shows date only';
+        my $item = DoubleDrive::FileListItem->new(path => path('/fake/test.txt'));
+        is $item->format_mtime, '2021-01-01', 'old file shows date only';
+    };
 } '2025-01-15T10:30:00Z';
 
 subtest 'format_name' => sub {
-    my $tempdir = tempdir;
-    my $file = $tempdir->child('test.txt');
-    $file->spew('test');
+    subtest 'file name formatting' => sub {
+        my $mock_path = mock 'Path::Tiny' => (
+            override => [
+                basename => sub { 'test.txt' },
+                stringify => sub { '/fake/test.txt' },
+                is_dir => sub { false },
+            ],
+        );
 
-    my @children = $tempdir->children;
-    my $item = DoubleDrive::FileListItem->new(path => $children[0]);
+        my $item = DoubleDrive::FileListItem->new(path => path('/fake/test.txt'));
 
-    is $item->format_name(10), 'test.txt  ', 'pads short name';
-    is $item->format_name(8), 'test.txt', 'exact fit';
-    is $item->format_name(5), 'te...', 'truncates long name';
+        is $item->format_name(10), 'test.txt  ', 'pads short name';
+        is $item->format_name(8), 'test.txt', 'exact fit';
+        is $item->format_name(5), 'te...', 'truncates long name';
+    };
 
-    # Test directory with trailing slash
-    my $dir_item = DoubleDrive::FileListItem->new(path => $tempdir);
-    my $formatted = $dir_item->format_name(20);
-    like $formatted, qr{/\s*$}, 'directory has trailing slash followed by padding';
+    subtest 'directory with trailing slash' => sub {
+        my $mock_path = mock 'Path::Tiny' => (
+            override => [
+                basename => sub { 'testdir' },
+                stringify => sub { '/fake/testdir' },
+                is_dir => sub { true },
+            ],
+        );
+
+        my $dir_item = DoubleDrive::FileListItem->new(path => path('/fake/testdir'));
+        is $dir_item->format_name(20), 'testdir/            ', 'directory has trailing slash followed by padding';
+    };
 };
 
 subtest 'size' => sub {
