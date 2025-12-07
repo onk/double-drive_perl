@@ -143,7 +143,7 @@ class DoubleDrive::App {
             key_scope => $scope,
             title => $title,
             message => $message,
-            on_confirm => sub { $f->done(1) },
+            on_execute => sub { $f->done(1) },
             on_cancel => sub { $f->fail("cancelled") },
         )->show();
 
@@ -175,7 +175,7 @@ class DoubleDrive::App {
             key_scope => $scope,
             title => 'Sort by',
             message => 'Select sort order:',
-            on_select => sub ($sort_key) {
+            on_execute => sub ($sort_key) {
                 $active_pane->set_sort($sort_key);
             },
             on_cancel => sub {

@@ -5,7 +5,7 @@ use experimental 'class';
 class DoubleDrive::ConfirmDialog :isa(DoubleDrive::Dialog::Base) {
     use DoubleDrive::Dialog::Base;
 
-    field $on_confirm :param;  # Callback for Yes/OK
+    field $on_execute :param;  # Callback for Yes/OK
     field $on_cancel :param = sub {};   # Callback for No/Escape
     field $selected_option = 'yes';  # 'yes' or 'no'
 
@@ -42,7 +42,7 @@ class DoubleDrive::ConfirmDialog :isa(DoubleDrive::Dialog::Base) {
 
     method confirm() {
         $self->close();
-        $on_confirm->();
+        $on_execute->();
     }
 
     method cancel() {

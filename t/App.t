@@ -79,7 +79,7 @@ load_app_module();
     package TestDialog;
     sub new($class, %args) { bless \%args, $class }
     sub show($self) { }
-    sub confirm($self) { $self->{on_confirm}->() if $self->{on_confirm} }
+    sub confirm($self) { $self->{on_execute}->() if $self->{on_execute} }
     sub cancel($self) { $self->{on_cancel}->() if $self->{on_cancel} }
     sub ack($self) { $self->{on_ack}->() if $self->{on_ack} }
 }

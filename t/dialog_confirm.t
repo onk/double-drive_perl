@@ -56,7 +56,7 @@ sub dialog_env {
         key_scope => $scope,
         title => $opts{title} // 'Confirm',
         message => $opts{message} // 'message',
-        on_confirm => $opts{on_confirm} // sub {},
+        on_execute => $opts{on_execute} // sub {},
     );
     $dialog_args{on_cancel} = $opts{on_cancel} if exists $opts{on_cancel};
 
@@ -78,7 +78,7 @@ subtest 'instruction text toggles with selection' => sub {
 subtest 'bindings fire confirm path and close float' => sub {
     my ($confirm, $cancel) = (0, 0);
     my ($dialog, $tickit, $float_box) = dialog_env(
-        on_confirm => sub { $confirm++ },
+        on_execute => sub { $confirm++ },
         on_cancel  => sub { $cancel++ },
     );
 
@@ -101,7 +101,7 @@ subtest 'bindings fire confirm path and close float' => sub {
 subtest 'cancel path via keys' => sub {
     my ($confirm, $cancel) = (0, 0);
     my ($dialog, $tickit, $float_box) = dialog_env(
-        on_confirm => sub { $confirm++ },
+        on_execute => sub { $confirm++ },
         on_cancel  => sub { $cancel++ },
     );
 
@@ -119,7 +119,7 @@ subtest 'cancel path via keys' => sub {
 subtest 'Tab toggles to no and Enter cancels' => sub {
     my ($confirm, $cancel) = (0, 0);
     my ($dialog, $tickit, $float_box) = dialog_env(
-        on_confirm => sub { $confirm++ },
+        on_execute => sub { $confirm++ },
         on_cancel  => sub { $cancel++ },
     );
 
@@ -135,7 +135,7 @@ subtest 'Tab toggles to no and Enter cancels' => sub {
 };
 
 subtest 'on_cancel defaults to no-op when omitted' => sub {
-    my ($dialog, $tickit, $float_box) = dialog_env(on_confirm => sub {});
+    my ($dialog, $tickit, $float_box) = dialog_env(on_execute => sub {});
 
     $dialog->show();
 

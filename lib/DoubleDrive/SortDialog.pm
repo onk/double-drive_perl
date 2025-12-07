@@ -5,7 +5,7 @@ use experimental 'class';
 class DoubleDrive::SortDialog :isa(DoubleDrive::Dialog::Base) {
     use DoubleDrive::Dialog::Base;
 
-    field $on_select :param;       # Callback with selected sort option
+    field $on_execute :param;       # Callback with selected sort option
     field $on_cancel :param = sub {};
     field $selected_index = 0;     # Index of currently selected option
 
@@ -57,7 +57,7 @@ class DoubleDrive::SortDialog :isa(DoubleDrive::Dialog::Base) {
         my $opt = $sort_options->{$key};
         return unless $opt;
         $self->close();
-        $on_select->($opt->{sort_key});
+        $on_execute->($opt->{sort_key});
     }
 
     method execute_selected() {
