@@ -6,7 +6,7 @@ use List::Util qw(max);
 use Tickit::Test qw(mk_term);
 
 use lib 'lib';
-use DoubleDrive::AlertDialog;
+use DoubleDrive::Dialog::AlertDialog;
 use DoubleDrive::KeyDispatcher;
 
 {
@@ -51,7 +51,7 @@ sub dialog_env {
     my $dispatcher = DoubleDrive::KeyDispatcher->new(tickit => $tickit);
     my $scope = $dispatcher->dialog_scope;
 
-    my $dialog = DoubleDrive::AlertDialog->new(
+    my $dialog = DoubleDrive::Dialog::AlertDialog->new(
         tickit => $tickit,
         float_box => $float_box,
         key_scope => $scope,

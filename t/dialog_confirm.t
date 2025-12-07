@@ -5,7 +5,7 @@ use Test2::V0;
 use Tickit::Test qw(mk_term);
 
 use lib 'lib';
-use DoubleDrive::ConfirmDialog;
+use DoubleDrive::Dialog::ConfirmDialog;
 use DoubleDrive::KeyDispatcher;
 
 {
@@ -60,7 +60,7 @@ sub dialog_env {
     );
     $dialog_args{on_cancel} = $opts{on_cancel} if exists $opts{on_cancel};
 
-    my $dialog = DoubleDrive::ConfirmDialog->new(%dialog_args);
+    my $dialog = DoubleDrive::Dialog::ConfirmDialog->new(%dialog_args);
 
     return ($dialog, $tickit, $float_box);
 }

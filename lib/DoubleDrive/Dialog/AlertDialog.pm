@@ -2,7 +2,7 @@ use v5.42;
 use utf8;
 use experimental 'class';
 
-class DoubleDrive::AlertDialog :isa(DoubleDrive::Dialog::Base) {
+class DoubleDrive::Dialog::AlertDialog :isa(DoubleDrive::Dialog::Base) {
     use DoubleDrive::Dialog::Base;
 
     field $on_ack :param = sub {};

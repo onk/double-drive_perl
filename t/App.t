@@ -10,8 +10,8 @@ use Tickit::Test qw(mk_term);
 use DoubleDrive::Layout;
 use DoubleDrive::KeyDispatcher;
 use DoubleDrive::CommandLineMode;
-use DoubleDrive::ConfirmDialog;
-use DoubleDrive::AlertDialog;
+use DoubleDrive::Dialog::ConfirmDialog;
+use DoubleDrive::Dialog::AlertDialog;
 
 # use DoubleDrive::App;
 #
@@ -346,7 +346,7 @@ subtest 'confirm_dialog (confirmed)' => sub {
         ],
     );
 
-    my $mock_confirm_dialog = mock 'DoubleDrive::ConfirmDialog' => (
+    my $mock_confirm_dialog = mock 'DoubleDrive::Dialog::ConfirmDialog' => (
         track => 1,
         override => [
             new => sub ($class, %args) { TestDialog->new(%args) },
@@ -385,7 +385,7 @@ subtest 'confirm_dialog (cancelled)' => sub {
         ],
     );
 
-    my $mock_confirm_dialog = mock 'DoubleDrive::ConfirmDialog' => (
+    my $mock_confirm_dialog = mock 'DoubleDrive::Dialog::ConfirmDialog' => (
         track => 1,
         override => [
             new => sub ($class, %args) { TestDialog->new(%args) },
@@ -418,7 +418,7 @@ subtest 'alert_dialog' => sub {
         ],
     );
 
-    my $mock_alert_dialog = mock 'DoubleDrive::AlertDialog' => (
+    my $mock_alert_dialog = mock 'DoubleDrive::Dialog::AlertDialog' => (
         track => 1,
         override => [
             new => sub ($class, %args) { TestDialog->new(%args) },

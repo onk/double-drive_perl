@@ -10,9 +10,9 @@ class DoubleDrive::App {
     use DoubleDrive::Command::Delete;
     use DoubleDrive::Command::Copy;
     use DoubleDrive::CommandContext;
-    use DoubleDrive::ConfirmDialog;
-    use DoubleDrive::AlertDialog;
-    use DoubleDrive::SortDialog;
+    use DoubleDrive::Dialog::ConfirmDialog;
+    use DoubleDrive::Dialog::AlertDialog;
+    use DoubleDrive::Dialog::SortDialog;
     use Future::AsyncAwait;
 
     field $tickit;
@@ -137,7 +137,7 @@ class DoubleDrive::App {
         my $f = Future->new;
         my $scope = $key_dispatcher->dialog_scope;
 
-        DoubleDrive::ConfirmDialog->new(
+        DoubleDrive::Dialog::ConfirmDialog->new(
             tickit => $tickit,
             float_box => $float_box,
             key_scope => $scope,
@@ -154,7 +154,7 @@ class DoubleDrive::App {
         my $f = Future->new;
         my $scope = $key_dispatcher->dialog_scope;
 
-        DoubleDrive::AlertDialog->new(
+        DoubleDrive::Dialog::AlertDialog->new(
             tickit => $tickit,
             float_box => $float_box,
             key_scope => $scope,
@@ -169,7 +169,7 @@ class DoubleDrive::App {
     method show_sort_dialog() {
         my $scope = $key_dispatcher->dialog_scope;
 
-        DoubleDrive::SortDialog->new(
+        DoubleDrive::Dialog::SortDialog->new(
             tickit => $tickit,
             float_box => $float_box,
             key_scope => $scope,
