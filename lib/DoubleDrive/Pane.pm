@@ -4,6 +4,7 @@ use experimental 'class';
 
 class DoubleDrive::Pane {
     use Tickit::Widget::Frame;
+    use Tickit::Widget::Static;
     use Tickit::Pen;
     use DoubleDrive::FileListView;
     use DoubleDrive::FileListItem;
@@ -423,6 +424,19 @@ class DoubleDrive::Pane {
             $selected_index = $new_index if defined $new_index;
         }
 
+        $self->_render();
+    }
+
+    method start_preview() {
+        # Detach file list view from frame to keep frame/title but remove contents for overlay preview
+        # Insert an empty Static widget instead of undef so Frame keeps a valid child
+        $widget->set_child(Tickit::Widget::Static->new(text => ""));
+        $self->_render();
+    }
+
+    method stop_preview() {
+        # Reattach file list view to frame after preview ends
+        $widget->set_child($file_list_view);
         $self->_render();
     }
 }

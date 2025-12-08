@@ -14,6 +14,7 @@ class DoubleDrive::App {
     use DoubleDrive::Dialog::AlertDialog;
     use DoubleDrive::Dialog::SortDialog;
     use Future::AsyncAwait;
+    use DoubleDrive::Command::ViewImage;
 
     field $tickit;
     field $left_pane :reader;    # :reader for testing
@@ -73,6 +74,15 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal('c' => sub {
             DoubleDrive::Command::Copy->new(
                 context => $self->command_context()
+            )->execute();
+        });
+        # View image with kitty icat when selecting a jpg/png/gif
+        $key_dispatcher->bind_normal('v' => sub {
+            DoubleDrive::Command::ViewImage->new(
+                context => $self->command_context(),
+                tickit => $tickit,
+                dialog_scope => $key_dispatcher->dialog_scope,
+                is_left => ($active_pane == $left_pane),
             )->execute();
         });
         $key_dispatcher->bind_normal('/' => sub { $self->enter_search_cmdline() });
