@@ -58,15 +58,28 @@ class DoubleDrive::Pane {
 
     method _sort_files($items) {
         if ($sort_key eq 'size') {
-            return [sort { $b->size <=> $a->size || fc($a->basename) cmp fc($b->basename) } @$items];
+            return [sort {
+                $b->is_dir <=> $a->is_dir ||
+                $b->size <=> $a->size ||
+                fc($a->basename) cmp fc($b->basename)
+            } @$items];
         } elsif ($sort_key eq 'mtime') {
-            return [sort { $b->mtime <=> $a->mtime || fc($a->basename) cmp fc($b->basename) } @$items];
+            return [sort {
+                $b->is_dir <=> $a->is_dir ||
+                $b->mtime <=> $a->mtime ||
+                fc($a->basename) cmp fc($b->basename)
+            } @$items];
         } elsif ($sort_key eq 'ext') {
             return [sort {
-                fc($a->extname) cmp fc($b->extname) || fc($a->basename) cmp fc($b->basename)
+                $b->is_dir <=> $a->is_dir ||
+                fc($a->extname) cmp fc($b->extname) ||
+                fc($a->basename) cmp fc($b->basename)
             } @$items];
         } else {  # 'name' is default
-            return [sort { fc($a->basename) cmp fc($b->basename) } @$items];
+            return [sort {
+                $b->is_dir <=> $a->is_dir ||
+                fc($a->basename) cmp fc($b->basename)
+            } @$items];
         }
     }
 

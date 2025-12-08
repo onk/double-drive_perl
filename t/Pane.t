@@ -33,6 +33,13 @@ use DoubleDrive::FileListItem;
 # Load Pane module
 use DoubleDrive::Pane;
 
+# Fake stat object for testing without sleep
+{
+    package Test::FakeStat;
+    sub size($self) { $self->{size} }
+    sub mtime($self) { $self->{mtime} }
+}
+
 sub setup_pane_mocks {
     my $widget = TestWidget->new;
 
@@ -103,13 +110,31 @@ subtest 'set_sort' => sub {
     $file_b->spew("x" x 300);   # size: 300
     $file_c->spew("x" x 200);   # size: 200
 
-    # Adjust mtimes by touching files in specific order
-    sleep 1;
-    $file_b->touch;  # most recent
-    sleep 1;
-    $file_a->touch;
-    sleep 1;
-    $file_c->touch;  # newest
+    # Mock stat to control mtime without sleep
+    my $mtime_overrides = {
+        $file_b->realpath->stringify => 1000,  # oldest
+        $file_a->realpath->stringify => 2000,
+        $file_c->realpath->stringify => 3000,  # newest
+    };
+
+    my $mock_item = mock 'DoubleDrive::FileListItem' => (
+        override => [
+            stat => sub ($self) {
+                my $real_stat = $self->path->stat;
+                my $path_str = $self->stringify;  # Use FileListItem's stringify, not Path::Tiny's
+                # diag "stat called for: $path_str";
+                # diag "  exists in overrides: " . (exists $mtime_overrides->{$path_str} ? "yes" : "no");
+                if (exists $mtime_overrides->{$path_str}) {
+                    # diag "  returning fake mtime: " . $mtime_overrides->{$path_str};
+                    return bless {
+                        size => $real_stat->size,
+                        mtime => $mtime_overrides->{$path_str},
+                    }, 'Test::FakeStat';
+                }
+                return $real_stat;
+            },
+        ],
+    );
 
     my $pane = DoubleDrive::Pane->new(
         path => $tempdir,
@@ -177,6 +202,145 @@ subtest 'set_sort' => sub {
         $pane->set_sort('size');
         is $pane->selected_index, $selected_before, 'cursor position unchanged';
         is scalar(@{$pane->files}), scalar(@$files), 'files unchanged';
+    };
+};
+
+subtest 'directories sorted before files' => sub {
+    my ($mocks, $widget) = setup_pane_mocks();
+
+    # Create a temporary test directory with both files and directories
+    my $tempdir = tempdir;
+
+    # Create files and directories with names that would interleave if sorted purely alphabetically
+    my $dir_b = $tempdir->child('bbb_dir');
+    my $dir_d = $tempdir->child('ddd_dir');
+    $dir_b->mkpath;
+    $dir_d->mkpath;
+
+    my $file_a = $tempdir->child('aaa.txt');
+    my $file_c = $tempdir->child('ccc.txt');
+    my $file_e = $tempdir->child('eee.txt');
+
+    $file_a->spew("x" x 300);   # largest file
+    $file_c->spew("x" x 200);
+    $file_e->spew("x" x 100);   # smallest file
+
+    # Mock stat to control mtime without sleep
+    my $mtime_overrides = {
+        $file_c->realpath->stringify => 1000,  # oldest file
+        $file_a->realpath->stringify => 2000,
+        $file_e->realpath->stringify => 3000,  # newest file
+    };
+
+    my $mock_item = mock 'DoubleDrive::FileListItem' => (
+        override => [
+            stat => sub ($self) {
+                my $real_stat = $self->path->stat;
+                my $path_str = $self->stringify;  # Use FileListItem's stringify, not Path::Tiny's
+                if (exists $mtime_overrides->{$path_str}) {
+                    return bless {
+                        size => $real_stat->size,
+                        mtime => $mtime_overrides->{$path_str},
+                    }, 'Test::FakeStat';
+                }
+                return $real_stat;
+            },
+        ],
+    );
+
+    my $pane = DoubleDrive::Pane->new(
+        path => $tempdir,
+        on_status_change => sub { }
+    );
+
+    subtest 'sort by name: directories first' => sub {
+        $pane->set_sort('name');
+        my $files = $pane->files;
+
+        is scalar(@$files), 5, 'has 5 items';
+
+        # Directories should come first (bbb_dir, ddd_dir)
+        ok $files->[0]->is_dir, 'first item is a directory';
+        is $files->[0]->basename, 'bbb_dir', 'first directory is bbb_dir';
+
+        ok $files->[1]->is_dir, 'second item is a directory';
+        is $files->[1]->basename, 'ddd_dir', 'second directory is ddd_dir';
+
+        # Then files (aaa.txt, ccc.txt, eee.txt)
+        ok !$files->[2]->is_dir, 'third item is a file';
+        is $files->[2]->basename, 'aaa.txt', 'first file is aaa.txt';
+
+        ok !$files->[3]->is_dir, 'fourth item is a file';
+        is $files->[3]->basename, 'ccc.txt', 'second file is ccc.txt';
+
+        ok !$files->[4]->is_dir, 'fifth item is a file';
+        is $files->[4]->basename, 'eee.txt', 'third file is eee.txt';
+    };
+
+    subtest 'sort by size: directories first' => sub {
+        $pane->set_sort('size');
+        my $files = $pane->files;
+
+        # Directories first (sorted by name: bbb_dir, ddd_dir)
+        ok $files->[0]->is_dir, 'first item is a directory';
+        is $files->[0]->basename, 'bbb_dir', 'first directory is bbb_dir';
+
+        ok $files->[1]->is_dir, 'second item is a directory';
+        is $files->[1]->basename, 'ddd_dir', 'second directory is ddd_dir';
+
+        # Then files by size: aaa.txt (300), ccc.txt (200), eee.txt (100)
+        ok !$files->[2]->is_dir, 'third item is a file';
+        is $files->[2]->basename, 'aaa.txt', 'largest file is aaa.txt';
+
+        ok !$files->[3]->is_dir, 'fourth item is a file';
+        is $files->[3]->basename, 'ccc.txt', 'second largest file is ccc.txt';
+
+        ok !$files->[4]->is_dir, 'fifth item is a file';
+        is $files->[4]->basename, 'eee.txt', 'smallest file is eee.txt';
+    };
+
+    subtest 'sort by mtime: directories first' => sub {
+        $pane->set_sort('mtime');
+        my $files = $pane->files;
+
+        # Directories first (sorted by name: bbb_dir, ddd_dir)
+        ok $files->[0]->is_dir, 'first item is a directory';
+        is $files->[0]->basename, 'bbb_dir', 'first directory is bbb_dir';
+
+        ok $files->[1]->is_dir, 'second item is a directory';
+        is $files->[1]->basename, 'ddd_dir', 'second directory is ddd_dir';
+
+        # Then files by mtime: eee.txt (newest), aaa.txt, ccc.txt (oldest)
+        ok !$files->[2]->is_dir, 'third item is a file';
+        is $files->[2]->basename, 'eee.txt', 'newest file is eee.txt';
+
+        ok !$files->[3]->is_dir, 'fourth item is a file';
+        is $files->[3]->basename, 'aaa.txt', 'second newest file is aaa.txt';
+
+        ok !$files->[4]->is_dir, 'fifth item is a file';
+        is $files->[4]->basename, 'ccc.txt', 'oldest file is ccc.txt';
+    };
+
+    subtest 'sort by ext: directories first' => sub {
+        $pane->set_sort('ext');
+        my $files = $pane->files;
+
+        # Directories first (sorted by name: bbb_dir, ddd_dir)
+        ok $files->[0]->is_dir, 'first item is a directory';
+        is $files->[0]->basename, 'bbb_dir', 'first directory is bbb_dir';
+
+        ok $files->[1]->is_dir, 'second item is a directory';
+        is $files->[1]->basename, 'ddd_dir', 'second directory is ddd_dir';
+
+        # Then files by extension and name (all .txt, sorted by name)
+        ok !$files->[2]->is_dir, 'third item is a file';
+        is $files->[2]->basename, 'aaa.txt', 'first .txt file is aaa.txt';
+
+        ok !$files->[3]->is_dir, 'fourth item is a file';
+        is $files->[3]->basename, 'ccc.txt', 'second .txt file is ccc.txt';
+
+        ok !$files->[4]->is_dir, 'fifth item is a file';
+        is $files->[4]->basename, 'eee.txt', 'third .txt file is eee.txt';
     };
 };
 

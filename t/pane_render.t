@@ -98,7 +98,7 @@ subtest 'change_directory to parent reselects previous directory entry' => sub {
 };
 
 subtest 'enter_selected descends into directory and resets selection' => sub {
-    my $dir = temp_dir_with_files('file_before', 'sub/file1', 'sub/file2');
+    my $dir = temp_dir_with_files('file_after', 'sub1/ignore', 'sub2/file1', 'sub2/file2');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
 
@@ -107,7 +107,8 @@ subtest 'enter_selected descends into directory and resets selection' => sub {
         is_active => 1,
         on_status_change => sub {}
     );
-    $pane->move_cursor(1);    # select subdir (file_before is index 0)
+    # With directory-first sorting: sub1 is index 0, sub2 is index 1, file_after is index 2
+    $pane->move_cursor(1);    # select sub2 (second directory)
     $pane->enter_selected();
 
     my @lines = split /\n/, $texts->[-1];
