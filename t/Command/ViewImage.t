@@ -28,7 +28,8 @@ my $mock_tickit = mock 'Tickit' => (
 {
     package Scope;
     sub new { bless { binds => {} }, shift }
-    sub bind { my ($self, $k, $cb) = @_; $self->{binds}{$k} = 1 }
+    sub bind { my ($self, $k, $cb) = @_; $self->{binds}{$k} = $cb }
+    sub trigger { my ($self, $k) = @_; $self->{binds}{$k}->() if $self->{binds}{$k} }
 }
 {
     package PaneStub;
@@ -45,7 +46,7 @@ my $mock_tickit = mock 'Tickit' => (
     sub on_status_change { return $_[0]->{on} }
 }
 
-subtest 'image file with kitty terminal' => sub {
+subtest 'single image file with kitty terminal' => sub {
     local $ENV{KITTY_WINDOW_ID} = 1;
     $system_calls = [];
     my $file = DoubleDrive::FileListItem->new(path => path('/tmp/test_image.jpg'));
@@ -70,7 +71,11 @@ subtest 'image file with kitty terminal' => sub {
     is $scope->{binds}{'v'}, D(), 'scope has v bind';
     is $scope->{binds}{'Enter'}, D(), 'scope has Enter bind';
     is $scope->{binds}{'Escape'}, D(), 'scope has Escape bind';
-    is $status_msgs[-1], 'Viewing image - press v/Enter/Escape to close', 'status message set';
+    is $scope->{binds}{'j'}, D(), 'scope has j bind';
+    is $scope->{binds}{'k'}, D(), 'scope has k bind';
+    is $scope->{binds}{'Down'}, D(), 'scope has Down bind';
+    is $scope->{binds}{'Up'}, D(), 'scope has Up bind';
+    is $status_msgs[-1], '/tmp/test_image.jpg', 'status shows path only for single image';
 };
 
 subtest 'non-image file' => sub {
@@ -119,6 +124,99 @@ subtest 'not kitty terminal' => sub {
     is $pane->{started}, 0, 'start_preview not called without kitty';
     is scalar @$system_calls, 0, 'no system call without kitty';
     is $status_msgs[-1], 'Image preview requires kitty terminal', 'error message shown';
+};
+
+subtest 'multiple images navigation' => sub {
+    local $ENV{KITTY_WINDOW_ID} = 1;
+    $system_calls = [];
+    my @files = (
+        DoubleDrive::FileListItem->new(path => path('/tmp/image1.jpg')),
+        DoubleDrive::FileListItem->new(path => path('/tmp/image2.png')),
+        DoubleDrive::FileListItem->new(path => path('/tmp/image3.gif')),
+    );
+    my $pane = PaneStub->new(\@files);
+    my @status_msgs;
+    my $ctx  = Ctx->new($pane, sub { push @status_msgs, $_[0] });
+    my $tickit = Tickit->new();
+    my $scope = Scope->new();
+
+    my $cmd = DoubleDrive::Command::ViewImage->new(
+        context => $ctx,
+        tickit => $tickit,
+        dialog_scope => $scope,
+        is_left => 1,
+    );
+
+    $cmd->execute();
+
+    is $pane->{started}, 1, 'start_preview called';
+    my $called_cmd = join ' ', @{$system_calls->[-1]};
+    is $called_cmd, 'kitty +kitten icat --place 37x22@1x1 /tmp/image1.jpg', 'first image shown';
+    is $status_msgs[-1], '[1/3] /tmp/image1.jpg', 'status shows position for multiple images';
+
+    # Test j key (next image)
+    $system_calls = [];
+    @status_msgs = ();
+    $scope->trigger('j');
+    $called_cmd = join ' ', @{$system_calls->[-1]};
+    is $called_cmd, 'kitty +kitten icat --place 37x22@1x1 /tmp/image2.png', 'second image shown after j';
+    is $status_msgs[-1], '[2/3] /tmp/image2.png', 'status updated to 2/3';
+
+    # Test k key (previous image)
+    $system_calls = [];
+    @status_msgs = ();
+    $scope->trigger('k');
+    $called_cmd = join ' ', @{$system_calls->[-1]};
+    is $called_cmd, 'kitty +kitten icat --place 37x22@1x1 /tmp/image1.jpg', 'back to first image after k';
+    is $status_msgs[-1], '[1/3] /tmp/image1.jpg', 'status back to 1/3';
+
+    # Test wrap around (j at last image)
+    $scope->trigger('j');  # to 2
+    $scope->trigger('j');  # to 3
+    $system_calls = [];
+    @status_msgs = ();
+    $scope->trigger('j');  # should wrap to 1
+    $called_cmd = join ' ', @{$system_calls->[-1]};
+    is $called_cmd, 'kitty +kitten icat --place 37x22@1x1 /tmp/image1.jpg', 'wraps to first image';
+    is $status_msgs[-1], '[1/3] /tmp/image1.jpg', 'status wraps to 1/3';
+
+    # Test wrap around (k at first image)
+    $system_calls = [];
+    @status_msgs = ();
+    $scope->trigger('k');  # should wrap to 3
+    $called_cmd = join ' ', @{$system_calls->[-1]};
+    is $called_cmd, 'kitty +kitten icat --place 37x22@1x1 /tmp/image3.gif', 'wraps to last image';
+    is $status_msgs[-1], '[3/3] /tmp/image3.gif', 'status wraps to 3/3';
+};
+
+subtest 'multiple files with mixed types' => sub {
+    local $ENV{KITTY_WINDOW_ID} = 1;
+    $system_calls = [];
+    my @files = (
+        DoubleDrive::FileListItem->new(path => path('/tmp/doc.txt')),
+        DoubleDrive::FileListItem->new(path => path('/tmp/image1.jpg')),
+        DoubleDrive::FileListItem->new(path => path('/tmp/readme.md')),
+        DoubleDrive::FileListItem->new(path => path('/tmp/image2.png')),
+    );
+    my $pane = PaneStub->new(\@files);
+    my @status_msgs;
+    my $ctx  = Ctx->new($pane, sub { push @status_msgs, $_[0] });
+    my $tickit = Tickit->new();
+    my $scope = Scope->new();
+
+    my $cmd = DoubleDrive::Command::ViewImage->new(
+        context => $ctx,
+        tickit => $tickit,
+        dialog_scope => $scope,
+        is_left => 1,
+    );
+
+    $cmd->execute();
+
+    is $pane->{started}, 1, 'start_preview called';
+    my $called_cmd = join ' ', @{$system_calls->[-1]};
+    is $called_cmd, 'kitty +kitten icat --place 37x22@1x1 /tmp/image1.jpg', 'first image (not txt) shown';
+    is $status_msgs[-1], '[1/2] /tmp/image1.jpg', 'status shows 2 images (filtered)';
 };
 
 subtest 'compute_place' => sub {

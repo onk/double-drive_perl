@@ -12,6 +12,9 @@ class DoubleDrive::Command::ViewImage {
 
     field $active_pane;
     field $on_status_change;
+    field $image_files;
+    field $current_index;
+    field $place;
 
     ADJUST {
         $active_pane = $context->active_pane;
@@ -21,10 +24,12 @@ class DoubleDrive::Command::ViewImage {
     method execute() {
         my $files = $active_pane->get_files_to_operate();
         return unless @$files;
-        my $file = $files->[0];
-        my $path = $file->stringify;
 
-        return unless $path =~ /\.(?:jpe?g|png|gif|bmp|tiff?|webp|svg|heic)$/i;
+        # Filter image files
+        $image_files = [ grep {
+            $_->stringify =~ /\.(?:jpe?g|png|gif|bmp|tiff?|webp|svg|heic)$/i
+        } @$files ];
+        return unless @$image_files;
 
         my ($rows, $cols) = $tickit->term->get_size;
 
@@ -34,34 +39,84 @@ class DoubleDrive::Command::ViewImage {
             return;
         }
 
-        my $place = $self->_compute_place($rows, $cols, $is_left);
+        $place = $self->_compute_place($rows, $cols, $is_left);
         return unless $place;
 
         $active_pane->start_preview();
-        my $ret = system('kitty', '+kitten', 'icat', '--place', $place, $path);
-        my $exit_code = $ret >> 8;
-        if ($exit_code != 0) {
-            $on_status_change->("Failed to show image (exit code $exit_code)");
+
+        $current_index = 0;
+
+        try {
+            $self->_show_image();
+        }
+        catch ($e) {
+            $self->_clear_image();
             $active_pane->stop_preview();
+            $on_status_change->($e);
             return;
         }
 
-        # Copy to lexical variable so closure can trigger DESTROY by setting undef
-        my $scope = $dialog_scope;
-
-        my $close_image = sub {
-            system('kitty', '+kitten', 'icat', '--clear');
-            $active_pane->stop_preview();
-            $scope = undef;
-        };
-
-        $on_status_change->("Viewing image - press v/Enter/Escape to close");
-
-        $scope->bind('v' => $close_image);
-        $scope->bind('Enter' => $close_image);
-        $scope->bind('Escape' => $close_image);
+        $dialog_scope->bind('v' => sub { $self->_close_image() });
+        $dialog_scope->bind('Enter' => sub { $self->_close_image() });
+        $dialog_scope->bind('Escape' => sub { $self->_close_image() });
+        $dialog_scope->bind('j' => sub { $self->_next_image() });
+        $dialog_scope->bind('k' => sub { $self->_prev_image() });
+        $dialog_scope->bind('Down' => sub { $self->_next_image() });
+        $dialog_scope->bind('Up' => sub { $self->_prev_image() });
 
         return;
+    }
+
+    method _clear_image() {
+        system('kitty', '+kitten', 'icat', '--clear');
+    }
+
+    method _show_image() {
+        my $path = $image_files->[$current_index]->stringify;
+        my $ret = system('kitty', '+kitten', 'icat', '--place', $place, $path);
+        my $exit_code = $ret >> 8;
+        if ($exit_code != 0) {
+            die "Failed to show image (exit code $exit_code)";
+        }
+        my $total = scalar @$image_files;
+        if ($total > 1) {
+            my $pos = $current_index + 1;
+            $on_status_change->("[$pos/$total] $path");
+        } else {
+            $on_status_change->("$path");
+        }
+    }
+
+    method _close_image() {
+        $self->_clear_image();
+        $active_pane->stop_preview();
+        $dialog_scope = undef;
+    }
+
+    method _next_image() {
+        return if @$image_files == 1;
+        $self->_clear_image();
+        $current_index = ($current_index + 1) % @$image_files;
+        try {
+            $self->_show_image();
+        }
+        catch ($e) {
+            $on_status_change->($e);
+            $self->_close_image();
+        }
+    }
+
+    method _prev_image() {
+        return if @$image_files == 1;
+        $self->_clear_image();
+        $current_index = ($current_index - 1) % @$image_files;
+        try {
+            $self->_show_image();
+        }
+        catch ($e) {
+            $on_status_change->($e);
+            $self->_close_image();
+        }
     }
 
     method _compute_place($rows, $cols, $is_left) {
