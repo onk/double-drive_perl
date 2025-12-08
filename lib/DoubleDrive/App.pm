@@ -18,8 +18,11 @@ class DoubleDrive::App {
     use Future::AsyncAwait;
     use DoubleDrive::Command::ViewImage;
     use DoubleDrive::StateStore;
+    use DoubleDrive::Config;
+    use DoubleDrive::Dialog::DirectoryJumpDialog;
 
     field $tickit;
+    field $config;
     field $state_store;
     field $left_pane :reader;    # :reader for testing
     field $right_pane :reader;   # :reader for testing
@@ -30,6 +33,7 @@ class DoubleDrive::App {
     field $cmdline_mode;         # CommandLineMode instance for managing command line input
 
     ADJUST {
+        $config = DoubleDrive::Config->new;
         $state_store = DoubleDrive::StateStore->new;
 
         my $paths = $state_store->load_paths();
@@ -76,6 +80,7 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal('Tab' => sub { $self->switch_pane() });
         $key_dispatcher->bind_normal('Backspace' => sub { $active_pane->change_directory("..") });
         $key_dispatcher->bind_normal(' ' => sub { $active_pane->toggle_selection() });
+        $key_dispatcher->bind_normal('L' => sub { $self->jump_to_registered_directory() });
         $key_dispatcher->bind_normal('d' => sub {
             DoubleDrive::Command::Delete->new(
                 context => $self->command_context()
@@ -216,6 +221,28 @@ class DoubleDrive::App {
         my $current_dir = $active_pane->current_path->stringify;
         system('tmux', 'new-window', '-c', $current_dir);
         $status_bar->set_text("Opened new tmux window in $current_dir") if $? == 0;
+    }
+
+    method jump_to_registered_directory() {
+        my $entries = $config->load_registered_directories();
+        if (!@$entries) {
+            $status_bar->set_text("No registered directories configured");
+            return;
+        }
+
+        my $scope = $key_dispatcher->dialog_scope;
+        DoubleDrive::Dialog::DirectoryJumpDialog->new(
+            tickit => $tickit,
+            float_box => $float_box,
+            key_scope => $scope,
+            title => 'Registered directories',
+            message => 'Select a directory to jump to:',
+            directories => $entries,
+            on_execute => sub ($path) {
+                $active_pane->change_directory($path);
+            },
+            on_cancel => sub { },
+        )->show();
     }
 
     method quit() {
