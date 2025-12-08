@@ -4,6 +4,7 @@ use experimental 'class';
 
 class DoubleDrive::App {
     use Tickit;
+    use Path::Tiny qw(path);
     use DoubleDrive::KeyDispatcher;
     use DoubleDrive::CommandLineMode;
     use DoubleDrive::Layout;
@@ -16,8 +17,10 @@ class DoubleDrive::App {
     use DoubleDrive::Dialog::SortDialog;
     use Future::AsyncAwait;
     use DoubleDrive::Command::ViewImage;
+    use DoubleDrive::StateStore;
 
     field $tickit;
+    field $state_store;
     field $left_pane :reader;    # :reader for testing
     field $right_pane :reader;   # :reader for testing
     field $active_pane :reader;  # :reader for testing
@@ -27,7 +30,13 @@ class DoubleDrive::App {
     field $cmdline_mode;         # CommandLineMode instance for managing command line input
 
     ADJUST {
-        my $components = DoubleDrive::Layout->build(left_path => '.', right_path => '.');
+        $state_store = DoubleDrive::StateStore->new;
+
+        my $paths = $state_store->load_paths();
+        my $left_path = $self->_path_or_default($paths->{left_path});
+        my $right_path = $self->_path_or_default($paths->{right_path});
+
+        my $components = DoubleDrive::Layout->build(left_path => $left_path, right_path => $right_path);
 
         $float_box = $components->{float_box};
         $status_bar = $components->{status_bar};
@@ -211,11 +220,23 @@ class DoubleDrive::App {
 
     method quit() {
         $self->confirm_dialog('Do you really want to quit?', 'Quit')->then(sub {
+            $state_store->save_paths($left_pane->current_path->stringify, $right_pane->current_path->stringify);
             $tickit->stop;
         })->retain;
     }
 
     method run() {
         $tickit->run;
+    }
+
+    method _path_or_default($path_str) {
+        return '.' unless defined $path_str;
+
+        my $p = path($path_str);
+        if ($p->exists && $p->is_dir) {
+            return $path_str;
+        } else {
+            return '.';
+        }
     }
 }
