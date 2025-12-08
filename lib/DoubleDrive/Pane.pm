@@ -7,6 +7,7 @@ class DoubleDrive::Pane {
     use Tickit::Pen;
     use DoubleDrive::FileListView;
     use DoubleDrive::FileListItem;
+    use DoubleDrive::ArchiveItem;
     use Path::Tiny qw(path);
     use List::Util qw(min first);
     use List::MoreUtils qw(firstidx);
@@ -14,12 +15,13 @@ class DoubleDrive::Pane {
     field $path :param;              # Initial path (string or Path::Tiny object) passed to constructor
     field $on_status_change :param;
     field $is_active :param :reader = false;  # :reader for testing
-    field $current_path :reader;     # Current directory as FileListItem object (:reader for testing)
-    field $files :reader = [];       # Array of FileListItem objects (:reader for testing)
+    field $current_path :reader;     # Current directory as FileListItem or ArchiveItem object (:reader for testing)
+    field $files :reader = [];       # Array of FileListItem or ArchiveItem objects (:reader for testing)
     field $selected_index :reader = 0;  # :reader for testing
     field $scroll_offset = 0;        # First visible item index
     field $widget :reader;
     field $file_list_view;
+    field $archive_root;             # Path to archive file when inside archive (undef otherwise)
 
     # Search state
     field $last_search_query = "";
@@ -33,6 +35,10 @@ class DoubleDrive::Pane {
         $self->_build_widget();
         $self->_load_directory();
         $self->_render();
+    }
+
+    method in_archive() {
+        return defined $archive_root;
     }
 
     method _build_widget() {
@@ -131,14 +137,28 @@ class DoubleDrive::Pane {
 
     method change_directory($new_path) {
         my $previous_path = $current_path;
+        my $exited_from_archive;
 
-        # Handle FileListItem and string paths
+        # Handle FileListItem, ArchiveItem, and string paths
         if ($new_path isa DoubleDrive::FileListItem) {
             $current_path = $new_path->realpath;
+        } elsif ($new_path isa DoubleDrive::ArchiveItem) {
+            $current_path = $new_path;
         } else {
-            my $path_obj = path($current_path->path, $new_path);
-            $current_path = DoubleDrive::FileListItem->new(path => $path_obj->realpath);
+            # String path (currently only ".." is used)
+            return unless $new_path eq "..";
+
+            # Navigate to parent directory
+            my $parent = $current_path->parent;
+
+            # Check if we exited from archive to filesystem
+            if ($self->in_archive && $parent isa DoubleDrive::FileListItem) {
+                $exited_from_archive = $archive_root;
+                $archive_root = undef;
+            }
+            $current_path = $parent;
         }
+
         $selected_index = 0;
         $scroll_offset = 0;
         $widget->set_title($self->_format_path_title($current_path->stringify));
@@ -152,18 +172,13 @@ class DoubleDrive::Pane {
 
         $self->_load_directory();
 
-        # When explicitly moving to parent (".."), select the directory we came from if it exists
-        if (!($new_path isa DoubleDrive::FileListItem) && $new_path eq "..") {
-            if (@$files) {
-                my $new_index;
-                for my ($i, $item) (indexed @$files) {
-                    if ($item->stringify eq $previous_path->stringify) {
-                        $new_index = $i;
-                        last;
-                    }
-                }
-                if (defined $new_index) {
-                    $selected_index = $new_index;
+        # Select the item we came from when moving to parent
+        if ($new_path eq ".." && @$files) {
+            my $target_path = $exited_from_archive // $previous_path->stringify;
+            for my ($i, $item) (indexed @$files) {
+                if ($item->stringify eq $target_path) {
+                    $selected_index = $i;
+                    last;
                 }
             }
         }
@@ -176,7 +191,22 @@ class DoubleDrive::Pane {
         my $selected = $files->[$selected_index];
         if ($selected->is_dir) {
             $self->change_directory($selected);
+        } elsif ($selected->is_archive) {
+            $self->enter_archive($selected);
         }
+    }
+
+    method enter_archive($archive_item) {
+        my $archive_root_item;
+        try {
+            $archive_root_item = DoubleDrive::ArchiveItem->new_from_archive($archive_item);
+        } catch($e) {
+            $on_status_change->("Cannot read archive: $e");
+            return;
+        }
+
+        $archive_root = $archive_item->stringify;
+        $self->change_directory($archive_root_item);
     }
 
     method set_active($active) {

@@ -175,7 +175,8 @@ subtest 'change_directory clears search state' => sub {
     $pane->update_search('a');
 
     # Change directory
-    $pane->change_directory('subdir');
+    my $subdir_item = DoubleDrive::FileListItem->new(path => $dir->child('subdir'));
+    $pane->change_directory($subdir_item);
 
     unlike $status_text, qr{search}, 'search cleared after directory change';
 };

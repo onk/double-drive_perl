@@ -1,3 +1,4 @@
+requires 'Archive::Zip';
 requires 'File::Copy::Recursive';
 requires 'File::MimeInfo';
 requires 'Future';
