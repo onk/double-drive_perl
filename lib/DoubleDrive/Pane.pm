@@ -159,18 +159,26 @@ class DoubleDrive::Pane {
         } elsif ($new_path isa DoubleDrive::ArchiveItem) {
             $current_path = $new_path;
         } else {
-            # String path (currently only ".." is used)
-            return unless $new_path eq "..";
+            # String path: handle ".." and absolute paths
+            if ($new_path eq "..") {
+                # Navigate to parent directory
+                my $parent = $current_path->parent;
 
-            # Navigate to parent directory
-            my $parent = $current_path->parent;
-
-            # Check if we exited from archive to filesystem
-            if ($self->in_archive && $parent isa DoubleDrive::FileListItem) {
-                $exited_from_archive = $archive_root;
-                $archive_root = undef;
+                # Check if we exited from archive to filesystem
+                if ($self->in_archive && $parent isa DoubleDrive::FileListItem) {
+                    $exited_from_archive = $archive_root;
+                    $archive_root = undef;
+                }
+                $current_path = $parent;
+            } elsif ($new_path =~ m{^/}) {
+                # Absolute path
+                my $new_item_path = path($new_path);
+                return unless $new_item_path->is_dir;
+                $current_path = DoubleDrive::FileListItem->new(path => $new_item_path->realpath);
+            } else {
+                # Invalid path
+                return;
             }
-            $current_path = $parent;
         }
 
         $selected_index = 0;

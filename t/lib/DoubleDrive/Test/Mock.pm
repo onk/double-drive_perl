@@ -87,12 +87,20 @@ sub mock_path ($name) {
             files => $file_items,
             current_path => DoubleDrive::FileListItem->new(path => $path),
             reload_called => 0,
+            change_directory_called => 0,
+            change_directory_arg => undef,
         }, $class;
     }
     sub get_files_to_operate($self) { $self->{files} }
     sub reload_directory($self) { $self->{reload_called}++ }
     sub reload_called($self) { $self->{reload_called} }
     sub current_path($self) { $self->{current_path} }
+    sub change_directory($self, $path) {
+        $self->{change_directory_called}++;
+        $self->{change_directory_arg} = $path;
+    }
+    sub change_directory_called($self) { $self->{change_directory_called} }
+    sub change_directory_arg($self) { $self->{change_directory_arg} }
 }
 
 sub mock_pane (%args) {

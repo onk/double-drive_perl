@@ -9,6 +9,7 @@ class DoubleDrive::App {
     use DoubleDrive::Layout;
     use DoubleDrive::Command::Delete;
     use DoubleDrive::Command::Copy;
+    use DoubleDrive::Command::MakeDir;
     use DoubleDrive::CommandContext;
     use DoubleDrive::Dialog::ConfirmDialog;
     use DoubleDrive::Dialog::AlertDialog;
@@ -91,6 +92,12 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal('Escape' => sub { $active_pane->clear_search() });
         $key_dispatcher->bind_normal('s' => sub { $self->show_sort_dialog() });
         $key_dispatcher->bind_normal('x' => sub { $self->open_tmux_window() });
+        $key_dispatcher->bind_normal('K' => sub {
+            DoubleDrive::Command::MakeDir->new(
+                context => $self->command_context(),
+                cmdline_mode => $cmdline_mode,
+            )->execute();
+        });
         $key_dispatcher->bind_normal('q' => sub { $self->quit() });
     }
 
