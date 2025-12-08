@@ -91,6 +91,7 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal('Escape' => sub { $active_pane->clear_search() });
         $key_dispatcher->bind_normal('s' => sub { $self->show_sort_dialog() });
         $key_dispatcher->bind_normal('x' => sub { $self->open_tmux_window() });
+        $key_dispatcher->bind_normal('q' => sub { $self->quit() });
     }
 
     # Search-specific command line mode
@@ -199,6 +200,12 @@ class DoubleDrive::App {
         my $current_dir = $active_pane->current_path->stringify;
         system('tmux', 'new-window', '-c', $current_dir);
         $status_bar->set_text("Opened new tmux window in $current_dir") if $? == 0;
+    }
+
+    method quit() {
+        $self->confirm_dialog('Do you really want to quit?', 'Quit')->then(sub {
+            $tickit->stop;
+        })->retain;
     }
 
     method run() {
