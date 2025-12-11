@@ -10,12 +10,12 @@ class DoubleDrive::Dialog::SortDialog :isa(DoubleDrive::Dialog::Base) {
     field $selected_index = 0;     # Index of currently selected option
 
     # Available sort options (ordered for display)
-    field $sort_option_order = ['n', 's', 'm', 'e'];
+    field $sort_option_order = ['n', 's', 't', 'x'];
     field $sort_options = {
         n => { sort_key => 'name',  label => '[N]ame' },
         s => { sort_key => 'size',  label => '[S]ize' },
-        m => { sort_key => 'mtime', label => '[M]odified time' },
-        e => { sort_key => 'ext',   label => '[E]xtension' },
+        t => { sort_key => 'mtime', label => '[T]ime' },
+        x => { sort_key => 'ext',   label => 'e[X]tension' },
     };
 
     method _instruction_text() {
@@ -37,10 +37,10 @@ class DoubleDrive::Dialog::SortDialog :isa(DoubleDrive::Dialog::Base) {
         $self->key_scope->bind('N' => sub { $self->select_option('n') });
         $self->key_scope->bind('s' => sub { $self->select_option('s') });
         $self->key_scope->bind('S' => sub { $self->select_option('s') });
-        $self->key_scope->bind('m' => sub { $self->select_option('m') });
-        $self->key_scope->bind('M' => sub { $self->select_option('m') });
-        $self->key_scope->bind('e' => sub { $self->select_option('e') });
-        $self->key_scope->bind('E' => sub { $self->select_option('e') });
+        $self->key_scope->bind('t' => sub { $self->select_option('t') });
+        $self->key_scope->bind('T' => sub { $self->select_option('t') });
+        $self->key_scope->bind('x' => sub { $self->select_option('x') });
+        $self->key_scope->bind('X' => sub { $self->select_option('x') });
         $self->key_scope->bind('Enter' => sub { $self->execute_selected() });
         $self->key_scope->bind('Escape' => sub { $self->cancel() });
     }
