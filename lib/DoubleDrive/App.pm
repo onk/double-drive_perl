@@ -16,7 +16,7 @@ class DoubleDrive::App {
     use DoubleDrive::Dialog::AlertDialog;
     use DoubleDrive::Dialog::SortDialog;
     use Future::AsyncAwait;
-    use DoubleDrive::Command::ViewImage;
+    use DoubleDrive::Command::ViewFile;
     use DoubleDrive::StateStore;
     use DoubleDrive::Config;
     use DoubleDrive::Dialog::DirectoryJumpDialog;
@@ -93,7 +93,7 @@ class DoubleDrive::App {
         });
         # View image with kitty icat when selecting a jpg/png/gif
         $key_dispatcher->bind_normal('v' => sub {
-            DoubleDrive::Command::ViewImage->new(
+            DoubleDrive::Command::ViewFile->new(
                 context => $self->command_context(),
                 tickit => $tickit,
                 dialog_scope => $key_dispatcher->dialog_scope,

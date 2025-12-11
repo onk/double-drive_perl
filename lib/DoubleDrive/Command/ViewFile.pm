@@ -2,7 +2,7 @@ use v5.42;
 use utf8;
 use experimental 'class';
 
-class DoubleDrive::Command::ViewImage {
+class DoubleDrive::Command::ViewFile {
     use Future;
 
     field $context :param;

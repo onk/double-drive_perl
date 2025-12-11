@@ -11,7 +11,7 @@ BEGIN {
     *CORE::GLOBAL::system = sub { push @$system_calls, [@_]; return 0 };
 }
 
-use DoubleDrive::Command::ViewImage;
+use DoubleDrive::Command::ViewFile;
 use DoubleDrive::FileListItem;
 
 use Tickit::Test qw(mk_term);
@@ -56,7 +56,7 @@ subtest 'single image file with kitty terminal' => sub {
     my $tickit = Tickit->new();
     my $scope = Scope->new();
 
-    my $cmd = DoubleDrive::Command::ViewImage->new(
+    my $cmd = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
@@ -88,7 +88,7 @@ subtest 'non-image file' => sub {
     my $tickit = Tickit->new();
     my $scope = Scope->new();
 
-    my $cmd = DoubleDrive::Command::ViewImage->new(
+    my $cmd = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
@@ -112,7 +112,7 @@ subtest 'not kitty terminal' => sub {
     my $tickit = Tickit->new();
     my $scope = Scope->new();
 
-    my $cmd = DoubleDrive::Command::ViewImage->new(
+    my $cmd = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
@@ -140,7 +140,7 @@ subtest 'multiple images navigation' => sub {
     my $tickit = Tickit->new();
     my $scope = Scope->new();
 
-    my $cmd = DoubleDrive::Command::ViewImage->new(
+    my $cmd = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
@@ -204,7 +204,7 @@ subtest 'multiple files with mixed types' => sub {
     my $tickit = Tickit->new();
     my $scope = Scope->new();
 
-    my $cmd = DoubleDrive::Command::ViewImage->new(
+    my $cmd = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
@@ -226,7 +226,7 @@ subtest 'compute_place' => sub {
     my $ctx = Ctx->new($pane, sub {});
     my $tickit = Tickit->new();
     my $scope = Scope->new();
-    my $obj = DoubleDrive::Command::ViewImage->new(
+    my $obj = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
