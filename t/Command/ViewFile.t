@@ -2,7 +2,7 @@ use v5.42;
 use utf8;
 use Test2::V0;
 use Test2::Tools::Mock qw(mock);
-use Path::Tiny qw(path);
+use Path::Tiny qw(path tempfile);
 
 my $system_calls;
 
@@ -78,10 +78,14 @@ subtest 'single image file with kitty terminal' => sub {
     is $status_msgs[-1], '/tmp/test_image.jpg', 'status shows path only for single image';
 };
 
-subtest 'non-image file' => sub {
+subtest 'text file preview' => sub {
     local $ENV{KITTY_WINDOW_ID} = 1;
     $system_calls = [];
-    my $file = DoubleDrive::FileListItem->new(path => path('/tmp/not_image.txt'));
+
+    my $temp = tempfile();
+    $temp->spew_utf8("Hello\nWorld");
+    my $file = DoubleDrive::FileListItem->new(path => $temp);
+
     my $pane = PaneStub->new([ $file ]);
     my @status_msgs;
     my $ctx  = Ctx->new($pane, sub { push @status_msgs, $_[0] });
@@ -97,8 +101,62 @@ subtest 'non-image file' => sub {
 
     $cmd->execute();
 
-    is $pane->{started}, 0, 'start_preview not called for non-image';
-    is scalar @$system_calls, 0, 'no system call for non-image';
+    my $called_cmd = join ' ', @{$system_calls->[-1]};
+    is $called_cmd, "bat --paging=always --pager=less -R +Gg $temp", 'bat invoked for text file';
+    is $pane->{stopped}, 1, 'stop_preview called (after bat finishes)';
+};
+
+subtest 'binary file ignored' => sub {
+    local $ENV{KITTY_WINDOW_ID} = 1;
+    $system_calls = [];
+
+    my $temp = tempfile(SUFFIX => '.gz');
+    $temp->spew_raw("\x1f\x8b\x08\x00" . ("\x00" x 10)); # gzip header
+    my $file = DoubleDrive::FileListItem->new(path => $temp);
+
+    my $pane = PaneStub->new([ $file ]);
+    my $ctx  = Ctx->new($pane, sub { });
+    my $tickit = Tickit->new();
+    my $scope = Scope->new();
+
+    my $cmd = DoubleDrive::Command::ViewFile->new(
+        context => $ctx,
+        tickit => $tickit,
+        dialog_scope => $scope,
+        is_left => 0,
+    );
+
+    $cmd->execute();
+
+    is $pane->{started}, 0, 'start_preview not called for binary';
+    is scalar @$system_calls, 0, 'no system call for binary';
+};
+
+subtest 'binary file ignored (pdf)' => sub {
+    local $ENV{KITTY_WINDOW_ID} = 1;
+    $system_calls = [];
+
+    my $temp = tempfile(SUFFIX => '.pdf');
+    # Create a fake PDF that looks like text at the beginning
+    $temp->spew_utf8("%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n");
+    my $file = DoubleDrive::FileListItem->new(path => $temp);
+
+    my $pane = PaneStub->new([ $file ]);
+    my $ctx  = Ctx->new($pane, sub { });
+    my $tickit = Tickit->new();
+    my $scope = Scope->new();
+
+    my $cmd = DoubleDrive::Command::ViewFile->new(
+        context => $ctx,
+        tickit => $tickit,
+        dialog_scope => $scope,
+        is_left => 0,
+    );
+
+    $cmd->execute();
+
+    is $pane->{started}, 0, 'start_preview not called for pdf';
+    is scalar @$system_calls, 0, 'no system call for pdf';
 };
 
 subtest 'not kitty terminal' => sub {
@@ -193,8 +251,8 @@ subtest 'multiple files with mixed types' => sub {
     local $ENV{KITTY_WINDOW_ID} = 1;
     $system_calls = [];
     my @files = (
-        DoubleDrive::FileListItem->new(path => path('/tmp/doc.txt')),
         DoubleDrive::FileListItem->new(path => path('/tmp/image1.jpg')),
+        DoubleDrive::FileListItem->new(path => path('/tmp/doc.txt')),
         DoubleDrive::FileListItem->new(path => path('/tmp/readme.md')),
         DoubleDrive::FileListItem->new(path => path('/tmp/image2.png')),
     );

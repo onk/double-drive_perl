@@ -25,6 +25,14 @@ class DoubleDrive::Command::ViewFile {
         my $files = $active_pane->get_files_to_operate();
         return unless @$files;
 
+        my $file = $files->[0];
+        unless ($file->stringify =~ /\.(?:jpe?g|png|gif|bmp|tiff?|webp|svg|heic)$/i) {
+            # Common binary formats that might pass -T check or shouldn't be opened as text
+            return if $file->stringify =~ /\.(?:pdf|zip|gz|tar|rar|7z|iso|dmg|exe|jar)$/i;
+            return unless -T $file->stringify;
+            return $self->_view_text($file);
+        }
+
         # Filter image files
         $image_files = [ grep {
             $_->stringify =~ /\.(?:jpe?g|png|gif|bmp|tiff?|webp|svg|heic)$/i
@@ -56,9 +64,9 @@ class DoubleDrive::Command::ViewFile {
             return;
         }
 
-        $dialog_scope->bind('v' => sub { $self->_close_image() });
-        $dialog_scope->bind('Enter' => sub { $self->_close_image() });
-        $dialog_scope->bind('Escape' => sub { $self->_close_image() });
+        $dialog_scope->bind('v' => sub { $self->_close() });
+        $dialog_scope->bind('Enter' => sub { $self->_close() });
+        $dialog_scope->bind('Escape' => sub { $self->_close() });
         $dialog_scope->bind('j' => sub { $self->_next_image() });
         $dialog_scope->bind('k' => sub { $self->_prev_image() });
         $dialog_scope->bind('Down' => sub { $self->_next_image() });
@@ -87,8 +95,10 @@ class DoubleDrive::Command::ViewFile {
         }
     }
 
-    method _close_image() {
-        $self->_clear_image();
+    method _close() {
+        if ($image_files) {
+            $self->_clear_image();
+        }
         $active_pane->stop_preview();
         $dialog_scope = undef;
     }
@@ -102,7 +112,7 @@ class DoubleDrive::Command::ViewFile {
         }
         catch ($e) {
             $on_status_change->($e);
-            $self->_close_image();
+            $self->_close();
         }
     }
 
@@ -115,8 +125,17 @@ class DoubleDrive::Command::ViewFile {
         }
         catch ($e) {
             $on_status_change->($e);
-            $self->_close_image();
+            $self->_close();
         }
+    }
+
+    method _view_text($file) {
+        $tickit->term->pause;
+        system('bat', '--paging=always', '--pager=less -R +Gg', $file->stringify);
+        $tickit->term->resume;
+        $tickit->rootwin->expose;
+
+        $self->_close();
     }
 
     method _compute_place($rows, $cols, $is_left) {
