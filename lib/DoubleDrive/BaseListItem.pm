@@ -62,6 +62,9 @@ class DoubleDrive::BaseListItem {
         my $stat = $self->stat;
         return undef unless $stat;
 
+        # Show <DIR> for directories instead of byte size
+        return "  <DIR>" if $self->is_dir;
+
         my $bytes = $stat->size;
         my $units = [qw(B K M G T)];
         my $unit_index = 0;

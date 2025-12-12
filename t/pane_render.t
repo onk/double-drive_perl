@@ -93,7 +93,7 @@ subtest 'change_directory to parent reselects previous directory entry' => sub {
     $pane->change_directory("..");
 
     my @lines = split /\n/, $texts->[-1];
-    like $lines[1], qr/^> subdir\/\s+0\.0B\s+01\/15 10:30$/, 'parent view selects previous directory';
+    like $lines[1], qr/^> subdir\/\s+<DIR>\s+01\/15 10:30$/, 'parent view selects previous directory';
     is $pane->selected_index, 1, 'cursor on previous directory entry';
 };
 

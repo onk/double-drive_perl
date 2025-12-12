@@ -112,7 +112,7 @@ subtest '_rows_to_lines() - formatted snapshot' => sub_at {
         { text => '  match.txt                     1.0K  01/15 10:30', pen => $highlight_pen },
         { text => '>*hit.txt                       1.0K  01/15 10:30', pen => $cursor_highlight_pen },
         { text => '  this-is-a-very-long-fil...    1.0K  01/15 10:30', pen => undef },
-        { text => '  mydir/                        4.0K  01/15 10:30', pen => undef },
+        { text => '  mydir/                       <DIR>  01/15 10:30', pen => undef },
     ], 'selector markers, highlight pen, and dir slash in one snapshot';
 } '2025-01-15T10:30:00Z';
 
