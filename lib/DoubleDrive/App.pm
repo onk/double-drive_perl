@@ -106,6 +106,7 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal('Escape' => sub { $active_pane->clear_search() });
         $key_dispatcher->bind_normal('s' => sub { $self->show_sort_dialog() });
         $key_dispatcher->bind_normal('x' => sub { $self->open_tmux_window() });
+        $key_dispatcher->bind_normal('e' => sub { $self->open_editor() });
         $key_dispatcher->bind_normal('K' => sub {
             DoubleDrive::Command::MakeDir->new(
                 context => $self->command_context(),
@@ -221,6 +222,36 @@ class DoubleDrive::App {
         my $current_dir = $active_pane->current_path->stringify;
         system('tmux', 'new-window', '-c', $current_dir);
         $status_bar->set_text("Opened new tmux window in $current_dir") if $? == 0;
+    }
+
+    method open_editor() {
+        my $files = $active_pane->files;
+        return unless @$files;
+
+        my $item = $files->[$active_pane->selected_index];
+        return if $item->is_dir;
+
+        my $path = $item->stringify;
+        my $current_dir = $active_pane->current_path->stringify;
+        my $editor = $ENV{EDITOR} // 'vim';
+
+        # Use zsh to handle execution and shell replacement
+        # Passing arguments as list to zsh -c avoids shell injection vulnerabilities
+        # ${=1} splits $EDITOR if it contains arguments (e.g. "code -w")
+        system(
+            'tmux', 'new-window', '-c', $current_dir,
+            'zsh', '-c',
+            '${=1} "$2"; exec zsh -i',
+            'zsh',   # $0
+            $editor, # $1
+            $path    # $2
+        );
+        if ($? == 0) {
+            $status_bar->set_text("Opened editor for $path");
+        } else {
+            my $exit_code = $? >> 8;
+            $status_bar->set_text("Failed to open editor (exit code: $exit_code)");
+        }
     }
 
     method jump_to_registered_directory() {
