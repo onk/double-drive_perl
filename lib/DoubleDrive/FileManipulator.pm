@@ -3,7 +3,7 @@ use utf8;
 use experimental 'class';
 
 class DoubleDrive::FileManipulator {
-    use File::Copy::Recursive qw(rcopy);
+    use File::Copy::Recursive qw(rcopy rmove);
 
     sub overwrite_targets ($class, $file_items, $dest_item) {
         my $existing = [];
@@ -72,6 +72,29 @@ class DoubleDrive::FileManipulator {
                         or die "rcopy failed: $!";
                 } else {
                     $file->copy($dest_file);
+                }
+            } catch ($e) {
+                push @$failed, { file => $item->basename, error => $e };
+            }
+        }
+
+        return $failed;
+    }
+
+    sub move_files ($class, $file_items, $dest_item) {
+        my $failed = [];
+        my $dest_path = $dest_item->path;
+
+        for my $item (@$file_items) {
+            my $file = $item->path;
+            try {
+                my $dest_file = $dest_path->child($file->basename);
+
+                if ($file->is_dir) {
+                    rmove($file->stringify, $dest_file->stringify)
+                        or die "rmove failed: $!";
+                } else {
+                    $file->move($dest_file);
                 }
             } catch ($e) {
                 push @$failed, { file => $item->basename, error => $e };

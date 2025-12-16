@@ -10,6 +10,7 @@ class DoubleDrive::App {
     use DoubleDrive::Layout;
     use DoubleDrive::Command::Delete;
     use DoubleDrive::Command::Copy;
+    use DoubleDrive::Command::Move;
     use DoubleDrive::Command::MakeDir;
     use DoubleDrive::CommandContext;
     use DoubleDrive::Dialog::ConfirmDialog;
@@ -88,6 +89,11 @@ class DoubleDrive::App {
         });
         $key_dispatcher->bind_normal('c' => sub {
             DoubleDrive::Command::Copy->new(
+                context => $self->command_context()
+            )->execute();
+        });
+        $key_dispatcher->bind_normal('m' => sub {
+            DoubleDrive::Command::Move->new(
                 context => $self->command_context()
             )->execute();
         });

@@ -138,6 +138,7 @@ subtest 'all expected keys are registered' => sub {
         # Commands
         field c => D();         # copy
         field d => D();         # delete
+        field m => D();         # move
         field e => D();         # open editor
         field K => D();         # mkdir
         field v => D();         # view file
