@@ -227,7 +227,8 @@ class DoubleDrive::App {
     method open_tmux_window() {
         my $current_dir = $active_pane->current_path->stringify;
         system('tmux', 'new-window', '-c', $current_dir);
-        $status_bar->set_text("Opened new tmux window in $current_dir") if $? == 0;
+        my $exit_code = $? >> 8;
+        $status_bar->set_text("Opened new tmux window in $current_dir") if $exit_code == 0;
     }
 
     method open_editor() {
@@ -252,10 +253,11 @@ class DoubleDrive::App {
             $editor, # $1
             $path    # $2
         );
-        if ($? == 0) {
+        my $exit_code = $? >> 8;
+
+        if ($exit_code == 0) {
             $status_bar->set_text("Opened editor for $path");
         } else {
-            my $exit_code = $? >> 8;
             $status_bar->set_text("Failed to open editor (exit code: $exit_code)");
         }
     }

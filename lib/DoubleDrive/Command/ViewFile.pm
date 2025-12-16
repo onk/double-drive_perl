@@ -81,8 +81,9 @@ class DoubleDrive::Command::ViewFile {
 
     method _show_image() {
         my $path = $image_files->[$current_index]->stringify;
-        my $ret = system('kitty', '+kitten', 'icat', '--place', $place, $path);
-        my $exit_code = $ret >> 8;
+        system('kitty', '+kitten', 'icat', '--place', $place, $path);
+        my $exit_code = $? >> 8;
+
         if ($exit_code != 0) {
             die "Failed to show image (exit code $exit_code)";
         }

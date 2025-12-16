@@ -13,7 +13,7 @@ BEGIN {
     *CORE::GLOBAL::system = sub {
         push @$system_calls, [@_];
         $? = $system_exit_code;
-        return $system_exit_code == 0 ? 0 : -1;
+        return $system_exit_code;
     };
 }
 
