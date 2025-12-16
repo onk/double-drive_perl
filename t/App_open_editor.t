@@ -6,8 +6,8 @@ use Test2::V0;
 use Test2::Tools::Mock qw(mock);
 use Path::Tiny qw(path tempdir);
 
-my $system_calls;
-my $system_exit_code;
+our $system_calls;
+our $system_exit_code;
 
 BEGIN {
     *CORE::GLOBAL::system = sub {
@@ -95,8 +95,8 @@ sub build_app_with_mocks ($left_pane) {
 }
 
 subtest 'opens editor for file with success' => sub {
-    $system_calls = [];
-    $system_exit_code = 0;
+    local $system_calls = [];
+    local $system_exit_code = 0;
 
     my $tmpdir = tempdir;
     my $file_path = path($tmpdir, 'test.txt');
@@ -130,8 +130,8 @@ subtest 'opens editor for file with success' => sub {
 };
 
 subtest 'opens editor with custom EDITOR' => sub {
-    $system_calls = [];
-    $system_exit_code = 0;
+    local $system_calls = [];
+    local $system_exit_code = 0;
     local $ENV{EDITOR} = 'emacs';
 
     my $tmpdir = tempdir;
@@ -153,8 +153,8 @@ subtest 'opens editor with custom EDITOR' => sub {
 };
 
 subtest 'shows error message on system failure' => sub {
-    $system_calls = [];
-    $system_exit_code = 256;  # Exit code 1 (256 = 1 << 8)
+    local $system_calls = [];
+    local $system_exit_code = 256;  # Exit code 1 (256 = 1 << 8)
 
     my $tmpdir = tempdir;
     my $file_path = path($tmpdir, 'test.txt');

@@ -4,7 +4,7 @@ use Test2::V0;
 use Test2::Tools::Mock qw(mock);
 use Path::Tiny qw(path tempfile);
 
-my $system_calls;
+our $system_calls;
 
 BEGIN {
     # stub out external system calls early so implementation's calls are captured
@@ -48,7 +48,7 @@ my $mock_tickit = mock 'Tickit' => (
 
 subtest 'single image file with kitty terminal' => sub {
     local $ENV{KITTY_WINDOW_ID} = 1;
-    $system_calls = [];
+    local $system_calls = [];
     my $file = DoubleDrive::FileListItem->new(path => path('/tmp/test_image.jpg'));
     my $pane = PaneStub->new([ $file ]);
     my @status_msgs;
@@ -80,7 +80,7 @@ subtest 'single image file with kitty terminal' => sub {
 
 subtest 'text file preview' => sub {
     local $ENV{KITTY_WINDOW_ID} = 1;
-    $system_calls = [];
+    local $system_calls = [];
 
     my $temp = tempfile();
     $temp->spew_utf8("Hello\nWorld");
@@ -108,7 +108,7 @@ subtest 'text file preview' => sub {
 
 subtest 'binary file ignored' => sub {
     local $ENV{KITTY_WINDOW_ID} = 1;
-    $system_calls = [];
+    local $system_calls = [];
 
     my $temp = tempfile(SUFFIX => '.gz');
     $temp->spew_raw("\x1f\x8b\x08\x00" . ("\x00" x 10)); # gzip header
@@ -134,7 +134,7 @@ subtest 'binary file ignored' => sub {
 
 subtest 'binary file ignored (pdf)' => sub {
     local $ENV{KITTY_WINDOW_ID} = 1;
-    $system_calls = [];
+    local $system_calls = [];
 
     my $temp = tempfile(SUFFIX => '.pdf');
     # Create a fake PDF that looks like text at the beginning
@@ -162,7 +162,7 @@ subtest 'binary file ignored (pdf)' => sub {
 subtest 'not kitty terminal' => sub {
     local $ENV{KITTY_WINDOW_ID} = undef;
     local $ENV{TERM} = 'xterm-256color';
-    $system_calls = [];
+    local $system_calls = [];
     my $file = DoubleDrive::FileListItem->new(path => path('/tmp/test_image.png'));
     my $pane = PaneStub->new([ $file ]);
     my @status_msgs;
@@ -186,7 +186,7 @@ subtest 'not kitty terminal' => sub {
 
 subtest 'multiple images navigation' => sub {
     local $ENV{KITTY_WINDOW_ID} = 1;
-    $system_calls = [];
+    local $system_calls = [];
     my @files = (
         DoubleDrive::FileListItem->new(path => path('/tmp/image1.jpg')),
         DoubleDrive::FileListItem->new(path => path('/tmp/image2.png')),
@@ -249,7 +249,7 @@ subtest 'multiple images navigation' => sub {
 
 subtest 'multiple files with mixed types' => sub {
     local $ENV{KITTY_WINDOW_ID} = 1;
-    $system_calls = [];
+    local $system_calls = [];
     my @files = (
         DoubleDrive::FileListItem->new(path => path('/tmp/image1.jpg')),
         DoubleDrive::FileListItem->new(path => path('/tmp/doc.txt')),
