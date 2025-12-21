@@ -132,14 +132,12 @@ subtest 'binary file ignored' => sub {
     is scalar @$system_calls, 0, 'no system call for binary';
 };
 
-subtest 'binary file ignored (pdf)' => sub {
+subtest 'pdf file preview' => sub {
     local $ENV{KITTY_WINDOW_ID} = 1;
     local $system_calls = [];
 
-    my $temp = tempfile(SUFFIX => '.pdf');
-    # Create a fake PDF that looks like text at the beginning
-    $temp->spew_utf8("%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n");
-    my $file = DoubleDrive::FileListItem->new(path => $temp);
+    my $pdf_path = '/tmp/test.pdf';
+    my $file = DoubleDrive::FileListItem->new(path => path($pdf_path));
 
     my $pane = PaneStub->new([ $file ]);
     my $ctx  = Ctx->new($pane, sub { });
@@ -155,8 +153,9 @@ subtest 'binary file ignored (pdf)' => sub {
 
     $cmd->execute();
 
-    is $pane->{started}, 0, 'start_preview not called for pdf';
-    is scalar @$system_calls, 0, 'no system call for pdf';
+    my $called_cmd = join ' ', @{$system_calls->[-1]};
+    is $called_cmd, q{pdftotext -layout \/tmp\/test\.pdf - 2>&1 | bat --paging=always --pager='less -R +Gg' --language=txt}, 'pdftotext piped to bat with correct arguments';
+    is $pane->{stopped}, 1, 'stop_preview called (after viewing)';
 };
 
 subtest 'not kitty terminal' => sub {

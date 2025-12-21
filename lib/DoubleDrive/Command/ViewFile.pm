@@ -27,8 +27,11 @@ class DoubleDrive::Command::ViewFile {
 
         my $file = $files->[0];
         unless ($file->stringify =~ /\.(?:jpe?g|png|gif|bmp|tiff?|webp|svg|heic)$/i) {
+            # View PDF files
+            return $self->_view_pdf($file) if $file->stringify =~ /\.pdf$/i;
+
             # Common binary formats that might pass -T check or shouldn't be opened as text
-            return if $file->stringify =~ /\.(?:pdf|zip|gz|tar|rar|7z|iso|dmg|exe|jar)$/i;
+            return if $file->stringify =~ /\.(?:zip|gz|tar|rar|7z|iso|dmg|exe|jar)$/i;
             return unless -T $file->stringify;
             return $self->_view_text($file);
         }
@@ -137,6 +140,26 @@ class DoubleDrive::Command::ViewFile {
         $tickit->rootwin->expose;
 
         $self->_close();
+    }
+
+    method _view_pdf($file) {
+        # quotemeta escapes special shell characters to prevent shell injection
+        my $pdf_path = quotemeta($file->stringify);
+
+        $tickit->term->pause;
+        # Use shell for piping (IPC::Open2 would be complex; temp files add I/O overhead)
+        # quotemeta makes this safe from shell injection
+        system("pdftotext -layout $pdf_path - 2>&1 | bat --paging=always --pager='less -R +Gg' --language=txt");
+        my $exit_code = $? >> 8;
+
+        $tickit->term->resume;
+        $tickit->rootwin->expose;
+
+        $self->_close();
+
+        if ($exit_code != 0) {
+            $on_status_change->("Failed to view PDF (exit code: $exit_code)");
+        }
     }
 
     method _compute_place($rows, $cols, $is_left) {
