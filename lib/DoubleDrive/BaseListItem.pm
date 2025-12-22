@@ -88,7 +88,7 @@ class DoubleDrive::BaseListItem {
         if ($mtime > $one_year_ago) {
             return strftime("%m/%d %H:%M", localtime($mtime));
         } else {
-            return strftime("%Y-%m-%d", localtime($mtime));
+            return strftime(" %Y-%m-%d", localtime($mtime));
         }
     }
 
@@ -120,5 +120,27 @@ class DoubleDrive::BaseListItem {
         my $padding = $target_width - ($used_width + $ellipsis_width);
         $padding = 0 if $padding < 0;
         return $out . $ellipsis . (' ' x $padding);
+    }
+
+    method format_mode() {
+        my $stat = $self->stat;
+        return "----------" unless $stat;
+
+        my $mode = $stat->mode;
+        return "----------" unless defined $mode;
+
+        # File type
+        my $type = $self->is_dir ? 'd' : '-';
+
+        # Permission bits (owner, group, other)
+        my $perms = '';
+        for my $shift (6, 3, 0) {
+            my $bits = ($mode >> $shift) & 0x7;
+            $perms .= ($bits & 0x4) ? 'r' : '-';
+            $perms .= ($bits & 0x2) ? 'w' : '-';
+            $perms .= ($bits & 0x1) ? 'x' : '-';
+        }
+
+        return $type . $perms;
     }
 }

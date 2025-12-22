@@ -212,4 +212,81 @@ subtest 'format_name' => sub {
     };
 };
 
+subtest 'format_mode' => sub {
+    subtest 'returns placeholder when stat is undef' => sub {
+        my $item = TestListItem->new(stat_value => undef);
+        is $item->format_mode, '----------', 'returns placeholder when stat is undef';
+    };
+
+    subtest 'returns placeholder when mode is undef' => sub {
+        my $stat_double = mock {} => (
+            add => [
+                mode => sub { undef },
+            ],
+        );
+
+        my $item = TestListItem->new(stat_value => $stat_double);
+        is $item->format_mode, '----------', 'returns placeholder when mode is undef';
+    };
+
+    subtest 'formats file permissions' => sub {
+        # 0644 (-rw-r--r--)
+        my $stat_double = mock {} => (
+            add => [
+                mode => sub { 0644 },
+            ],
+        );
+
+        my $item = TestListItem->new(
+            stat_value => $stat_double,
+            is_dir_value => false,
+        );
+        is $item->format_mode, '-rw-r--r--', 'formats 0644 permissions';
+    };
+
+    subtest 'formats directory permissions' => sub {
+        # 0755 (drwxr-xr-x)
+        my $stat_double = mock {} => (
+            add => [
+                mode => sub { 0755 },
+            ],
+        );
+
+        my $item = TestListItem->new(
+            stat_value => $stat_double,
+            is_dir_value => true,
+        );
+        is $item->format_mode, 'drwxr-xr-x', 'formats 0755 directory permissions';
+    };
+
+    subtest 'formats various permission bits' => sub {
+        my $test_cases = [
+            # [mode, is_dir, expected, description]
+            [0777, false, '-rwxrwxrwx', 'all permissions'],
+            [0700, false, '-rwx------', 'owner only'],
+            [0070, false, '----rwx---', 'group only'],
+            [0007, false, '-------rwx', 'other only'],
+            [0000, false, '----------', 'no permissions'],
+            [0755, true,  'drwxr-xr-x', 'typical directory'],
+            [0600, false, '-rw-------', 'private file'],
+        ];
+
+        for my $case (@$test_cases) {
+            my ($mode, $is_dir, $expected, $desc) = @$case;
+
+            my $stat_double = mock {} => (
+                add => [
+                    mode => sub { $mode },
+                ],
+            );
+
+            my $item = TestListItem->new(
+                stat_value => $stat_double,
+                is_dir_value => $is_dir,
+            );
+            is $item->format_mode, $expected, $desc;
+        }
+    };
+};
+
 done_testing;

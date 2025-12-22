@@ -20,6 +20,7 @@ use constant FIXED_MTIME => 1736937000;
     }
     sub size  { shift->{size} }
     sub mtime { shift->{mtime} }
+    sub mode  { shift->{mode} // 0644 }  # Default to 0644
 }
 
 sub StubStat (%args) {

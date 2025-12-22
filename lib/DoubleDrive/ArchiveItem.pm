@@ -80,6 +80,7 @@ class DoubleDrive::ArchiveItem :isa(DoubleDrive::BaseListItem) {
         return DoubleDrive::ArchiveItem::Stat->new(
             size_value  => $entry_info->{size},
             mtime_value => $entry_info->{mtime},
+            mode_value  => $entry_info->{mode},
         );
     }
 

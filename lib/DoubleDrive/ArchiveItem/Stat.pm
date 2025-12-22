@@ -8,4 +8,5 @@ class DoubleDrive::ArchiveItem::Stat {
 
     field $size_value :param :reader(size);
     field $mtime_value :param :reader(mtime);
+    field $mode_value :param :reader(mode) = undef;
 }

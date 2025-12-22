@@ -48,10 +48,11 @@ sub _rows_to_lines ($self, $rows, $cols) {
         my $formatted_name = $item->format_name($max_name_width);
         my $size = $item->format_size;
         my $mtime = $item->format_mtime;
+        my $mode = $item->format_mode;
 
         my $text;
         if (defined $size && defined $mtime) {
-            $text = $selector . $formatted_name . " " . $size . "  " . $mtime;
+            $text = $selector . $formatted_name . " " . $size . "  " . $mtime . " " . $mode;
         } else {
             $text = $selector . $formatted_name;
         }
@@ -67,7 +68,7 @@ sub _rows_to_lines ($self, $rows, $cols) {
 }
 
 sub _max_name_width ($self, $width) {
-    my $max_name_width = $width - 2 - 8 - 3 - 11;
+    my $max_name_width = $width - 2 - 8 - 3 - 11 - 11;
     $max_name_width = 10 if $max_name_width < 10;    # Minimum width
     return $max_name_width;
 }

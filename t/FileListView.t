@@ -20,9 +20,9 @@ BEGIN {
 subtest '_max_name_width()' => sub {
     my $view = DoubleDrive::FileListView->new;
 
-    # Formula: width - 2 (selector) - 8 (size) - 3 (spacing) - 11 (mtime) = width - 24
-    is $view->_max_name_width(50), 26, 'normal width calculation';
-    is $view->_max_name_width(24), 10, 'exactly minimum threshold';
+    # Formula: width - 2 (selector) - 8 (size) - 3 (spacing) - 11 (mtime) - 11 (mode) = width - 35
+    is $view->_max_name_width(50), 15, 'normal width calculation';
+    is $view->_max_name_width(35), 10, 'exactly minimum threshold';
     is $view->_max_name_width(10), 10, 'below minimum enforces floor';
 };
 
@@ -49,7 +49,7 @@ subtest '_rows_to_lines() - file without stat' => sub {
     my $rows = [{ item => $item, is_cursor => 0 }];
 
     my $lines = $view->_rows_to_lines($rows, 50);
-    my $expected_text = '  test.txt                  ';  # name width 26 at cols=50
+    my $expected_text = '  test.txt       ';  # name width 15 at cols=50
 
     is $lines, [
         { text => $expected_text, pen => undef },
@@ -76,8 +76,8 @@ subtest '_rows_to_lines() - formatted snapshot' => sub_at {
             stat => sub {
                 my $self = shift;
                 return "$self" =~ m{/mydir$}
-                    ? StubStat(size => 4096, mtime => FIXED_MTIME)
-                    : StubStat(size => 1024, mtime => FIXED_MTIME);
+                    ? StubStat(size => 4096, mtime => FIXED_MTIME, mode => 0755)
+                    : StubStat(size => 1024, mtime => FIXED_MTIME, mode => 0644);
             },
         ],
     );
@@ -106,13 +106,13 @@ subtest '_rows_to_lines() - formatted snapshot' => sub_at {
 
     my $lines = $view->_rows_to_lines($rows, 50);
     is $lines, [
-        { text => '  test.txt                      1.0K  01/15 10:30', pen => undef },
-        { text => '> cursor.txt                    1.0K  01/15 10:30', pen => $cursor_pen },
-        { text => ' *selected.txt                  1.0K  01/15 10:30', pen => undef },
-        { text => '  match.txt                     1.0K  01/15 10:30', pen => $highlight_pen },
-        { text => '>*hit.txt                       1.0K  01/15 10:30', pen => $cursor_highlight_pen },
-        { text => '  this-is-a-very-long-fil...    1.0K  01/15 10:30', pen => undef },
-        { text => '  mydir/                       <DIR>  01/15 10:30', pen => undef },
+        { text => '  test.txt           1.0K  01/15 10:30 -rw-r--r--', pen => undef },
+        { text => '> cursor.txt         1.0K  01/15 10:30 -rw-r--r--', pen => $cursor_pen },
+        { text => ' *selected.txt       1.0K  01/15 10:30 -rw-r--r--', pen => undef },
+        { text => '  match.txt          1.0K  01/15 10:30 -rw-r--r--', pen => $highlight_pen },
+        { text => '>*hit.txt            1.0K  01/15 10:30 -rw-r--r--', pen => $cursor_highlight_pen },
+        { text => '  this-is-a-ve...    1.0K  01/15 10:30 -rw-r--r--', pen => undef },
+        { text => '  mydir/            <DIR>  01/15 10:30 drwxr-xr-x', pen => undef },
     ], 'selector markers, highlight pen, and dir slash in one snapshot';
 } '2025-01-15T10:30:00Z';
 

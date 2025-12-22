@@ -50,12 +50,17 @@ class DoubleDrive::Archive::Reader::Zip :isa(DoubleDrive::Archive::Reader) {
                 # This is a direct child (explicit entry)
                 my $is_dir = $full_name =~ m{/$};
 
+                # Extract Unix mode from external file attributes (upper 16 bits)
+                my $external_attr = $member->externalFileAttributes();
+                my $mode = defined $external_attr ? ($external_attr >> 16) : undef;
+
                 $entries->{$basename} = {
                     path       => $internal_path eq '' ? $basename : "$internal_path/$basename",
                     is_dir     => $is_dir,
                     size       => $is_dir ? 0 : $member->uncompressedSize,
                     mtime      => $member->lastModTime,
                     basename   => $basename,
+                    mode       => $mode,
                 };
             }
         }

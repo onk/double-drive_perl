@@ -34,8 +34,8 @@ subtest 'toggle_selection marks file and moves cursor down' => sub {
     $pane->toggle_selection();
 
     my @lines = split /\n/, $texts->[-1];
-    is $lines[0], ' *file1         0.0B  01/15 10:30', 'file1 selected, cursor moved';
-    is $lines[1], '> file2         0.0B  01/15 10:30', 'cursor on file2';
+    is $lines[0], ' *file1         0.0B  01/15 10:30 -rw-r--r--', 'file1 selected, cursor moved';
+    is $lines[1], '> file2         0.0B  01/15 10:30 -rw-r--r--', 'cursor on file2';
 };
 
 subtest 'toggle_selection on cursor shows >* indicator' => sub {
@@ -56,7 +56,7 @@ subtest 'toggle_selection on cursor shows >* indicator' => sub {
     $pane->move_cursor(-1);
 
     my @lines = split /\n/, $texts->[-1];
-    is $lines[0], '>*file1         0.0B  01/15 10:30', 'file1 shows >* when selected and cursor';
+    is $lines[0], '>*file1         0.0B  01/15 10:30 -rw-r--r--', 'file1 shows >* when selected and cursor';
 };
 
 subtest 'toggle_selection twice deselects file' => sub {
@@ -78,8 +78,8 @@ subtest 'toggle_selection twice deselects file' => sub {
     $pane->toggle_selection(); # deselects file1, moves to file2
 
     my @lines = split /\n/, $texts->[-1];
-    is $lines[0], '  file1         0.0B  01/15 10:30', 'file1 deselected';
-    is $lines[1], '> file2         0.0B  01/15 10:30', 'cursor moved to file2';
+    is $lines[0], '  file1         0.0B  01/15 10:30 -rw-r--r--', 'file1 deselected';
+    is $lines[1], '> file2         0.0B  01/15 10:30 -rw-r--r--', 'cursor moved to file2';
 };
 
 subtest 'get_files_to_operate returns selected files in file list order' => sub {
