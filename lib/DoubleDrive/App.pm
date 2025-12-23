@@ -12,6 +12,7 @@ class DoubleDrive::App {
     use DoubleDrive::Command::Copy;
     use DoubleDrive::Command::Move;
     use DoubleDrive::Command::MakeDir;
+    use DoubleDrive::Command::Rename;
     use DoubleDrive::CommandContext;
     use DoubleDrive::Dialog::ConfirmDialog;
     use DoubleDrive::Dialog::AlertDialog;
@@ -95,6 +96,12 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal('m' => sub {
             DoubleDrive::Command::Move->new(
                 context => $self->command_context()
+            )->execute();
+        });
+        $key_dispatcher->bind_normal('r' => sub {
+            DoubleDrive::Command::Rename->new(
+                context => $self->command_context(),
+                tickit => $tickit,
             )->execute();
         });
         # View image with kitty icat when selecting a jpg/png/gif

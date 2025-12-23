@@ -141,6 +141,7 @@ subtest 'all expected keys are registered' => sub {
         field m => D();         # move
         field e => D();         # open editor
         field K => D();         # mkdir
+        field r => D();         # rename
         field v => D();         # view file
         field x => D();         # open tmux window
 

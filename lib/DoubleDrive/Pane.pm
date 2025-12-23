@@ -278,6 +278,13 @@ class DoubleDrive::Pane {
         $self->move_cursor(1);
     }
 
+    method clear_selection() {
+        for my $file (@$files) {
+            $file->toggle_selected() if $file->is_selected;
+        }
+        $self->_render();
+    }
+
     method get_files_to_operate() {
         return [] unless @$files;
 
