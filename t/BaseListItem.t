@@ -167,7 +167,7 @@ subtest 'format_mtime' => sub_at {
         );
 
         my $item = TestListItem->new(stat_value => $stat_double);
-        is $item->format_mtime, '2021-01-01', 'old file shows date only';
+        is $item->format_mtime, ' 2021-01-01', 'old file shows date only';
     };
 
     subtest 'returns undef when stat is undef' => sub {
