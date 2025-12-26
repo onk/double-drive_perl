@@ -101,7 +101,7 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal('r' => sub {
             DoubleDrive::Command::Rename->new(
                 context => $self->command_context(),
-                tickit => $tickit,
+                external_command_runner => sub { $self->run_external_command(@_) },
             )->execute();
         });
         # View image with kitty icat when selecting a jpg/png/gif
@@ -111,6 +111,7 @@ class DoubleDrive::App {
                 tickit => $tickit,
                 dialog_scope => $key_dispatcher->dialog_scope,
                 is_left => ($active_pane == $left_pane),
+                external_command_runner => sub { $self->run_external_command(@_) },
             )->execute();
         });
         $key_dispatcher->bind_normal('/' => sub { $self->enter_search_cmdline() });
@@ -267,6 +268,15 @@ class DoubleDrive::App {
         } else {
             $status_bar->set_text("Failed to open editor (exit code: $exit_code)");
         }
+    }
+
+    method run_external_command(@command) {
+        $tickit->term->pause;
+        system(@command);
+        my $exit_code = $? >> 8;
+        $tickit->term->resume;
+        $tickit->rootwin->expose;
+        return $exit_code;
     }
 
     method jump_to_registered_directory() {

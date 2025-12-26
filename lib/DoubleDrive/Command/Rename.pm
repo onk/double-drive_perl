@@ -6,7 +6,7 @@ class DoubleDrive::Command::Rename {
     use Cwd qw(getcwd);
 
     field $context :param;
-    field $tickit :param;
+    field $external_command_runner :param;
 
     field $active_pane;
     field $on_status_change;
@@ -29,11 +29,7 @@ class DoubleDrive::Command::Rename {
         defer { chdir $orig_dir; }
 
         # Transfer terminal control to mmv
-        $tickit->term->pause;
-        system('mmv', @$basenames);
-        my $exit_code = $? >> 8;
-        $tickit->term->resume;
-        $tickit->rootwin->expose;
+        my $exit_code = $external_command_runner->('mmv', @$basenames);
 
         # Reload directory and clear selection
         $active_pane->reload_directory();

@@ -9,6 +9,7 @@ class DoubleDrive::Command::ViewFile {
     field $tickit :param;
     field $is_left :param;
     field $dialog_scope :param;
+    field $external_command_runner :param;
 
     field $active_pane;
     field $on_status_change;
@@ -134,26 +135,22 @@ class DoubleDrive::Command::ViewFile {
     }
 
     method _view_text($file) {
-        $tickit->term->pause;
-        system('bat', '--paging=always', '--pager=less -R +Gg', $file->stringify);
-        $tickit->term->resume;
-        $tickit->rootwin->expose;
+        my $exit_code = $external_command_runner->('bat', '--paging=always', '--pager=less -R +Gg', $file->stringify);
 
         $self->_close();
+
+        if ($exit_code != 0) {
+            $on_status_change->("Failed to view text file (exit code: $exit_code)");
+        }
     }
 
     method _view_pdf($file) {
         # quotemeta escapes special shell characters to prevent shell injection
         my $pdf_path = quotemeta($file->stringify);
 
-        $tickit->term->pause;
         # Use shell for piping (IPC::Open2 would be complex; temp files add I/O overhead)
         # quotemeta makes this safe from shell injection
-        system("pdftotext -layout $pdf_path - 2>&1 | bat --paging=always --pager='less -R +Gg' --language=txt");
-        my $exit_code = $? >> 8;
-
-        $tickit->term->resume;
-        $tickit->rootwin->expose;
+        my $exit_code = $external_command_runner->("pdftotext -layout $pdf_path - 2>&1 | bat --paging=always --pager='less -R +Gg' --language=txt");
 
         $self->_close();
 

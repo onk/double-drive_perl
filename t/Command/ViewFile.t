@@ -55,12 +55,14 @@ subtest 'single image file with kitty terminal' => sub {
     my $ctx  = Ctx->new($pane, sub { push @status_msgs, $_[0] });
     my $tickit = Tickit->new();
     my $scope = Scope->new();
+    my $runner = sub { push @$system_calls, [@_]; return 0 };
 
     my $cmd = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
         is_left => 1,
+        external_command_runner => $runner,
     );
 
     $cmd->execute();
@@ -91,12 +93,14 @@ subtest 'text file preview' => sub {
     my $ctx  = Ctx->new($pane, sub { push @status_msgs, $_[0] });
     my $tickit = Tickit->new();
     my $scope = Scope->new();
+    my $runner = sub { push @$system_calls, [@_]; return 0 };
 
     my $cmd = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
         is_left => 0,
+        external_command_runner => $runner,
     );
 
     $cmd->execute();
@@ -118,12 +122,14 @@ subtest 'binary file ignored' => sub {
     my $ctx  = Ctx->new($pane, sub { });
     my $tickit = Tickit->new();
     my $scope = Scope->new();
+    my $runner = sub { push @$system_calls, [@_]; return 0 };
 
     my $cmd = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
         is_left => 0,
+        external_command_runner => $runner,
     );
 
     $cmd->execute();
@@ -143,12 +149,14 @@ subtest 'pdf file preview' => sub {
     my $ctx  = Ctx->new($pane, sub { });
     my $tickit = Tickit->new();
     my $scope = Scope->new();
+    my $runner = sub { push @$system_calls, [@_]; return 0 };
 
     my $cmd = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
         is_left => 0,
+        external_command_runner => $runner,
     );
 
     $cmd->execute();
@@ -168,12 +176,14 @@ subtest 'not kitty terminal' => sub {
     my $ctx  = Ctx->new($pane, sub { push @status_msgs, $_[0] });
     my $tickit = Tickit->new();
     my $scope = Scope->new();
+    my $runner = sub { push @$system_calls, [@_]; return 0 };
 
     my $cmd = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
         is_left => 1,
+        external_command_runner => $runner,
     );
 
     $cmd->execute();
@@ -196,12 +206,14 @@ subtest 'multiple images navigation' => sub {
     my $ctx  = Ctx->new($pane, sub { push @status_msgs, $_[0] });
     my $tickit = Tickit->new();
     my $scope = Scope->new();
+    my $runner = sub { push @$system_calls, [@_]; return 0 };
 
     my $cmd = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
         is_left => 1,
+        external_command_runner => $runner,
     );
 
     $cmd->execute();
@@ -260,12 +272,14 @@ subtest 'multiple files with mixed types' => sub {
     my $ctx  = Ctx->new($pane, sub { push @status_msgs, $_[0] });
     my $tickit = Tickit->new();
     my $scope = Scope->new();
+    my $runner = sub { push @$system_calls, [@_]; return 0 };
 
     my $cmd = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
         is_left => 1,
+        external_command_runner => $runner,
     );
 
     $cmd->execute();
@@ -283,11 +297,14 @@ subtest 'compute_place' => sub {
     my $ctx = Ctx->new($pane, sub {});
     my $tickit = Tickit->new();
     my $scope = Scope->new();
+    my $runner = sub { push @$system_calls, [@_]; return 0 };
+
     my $obj = DoubleDrive::Command::ViewFile->new(
         context => $ctx,
         tickit => $tickit,
         dialog_scope => $scope,
         is_left => 1,
+        external_command_runner => $runner,
     );
 
     is $obj->_compute_place(24,80,1), '37x21@1x1', 'compute_place for left pane';
