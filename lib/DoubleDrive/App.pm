@@ -115,9 +115,13 @@ class DoubleDrive::App {
             )->execute();
         });
         $key_dispatcher->bind_normal('/' => sub { $self->enter_search_cmdline() });
+        $key_dispatcher->bind_normal('*' => sub { $self->enter_filter_cmdline() });
         $key_dispatcher->bind_normal('n' => sub { $active_pane->next_match() });
         $key_dispatcher->bind_normal('N' => sub { $active_pane->prev_match() });
-        $key_dispatcher->bind_normal('Escape' => sub { $active_pane->clear_search() });
+        $key_dispatcher->bind_normal('Escape' => sub {
+            $active_pane->clear_search();
+            $active_pane->clear_filter();
+        });
         $key_dispatcher->bind_normal('s' => sub { $self->show_sort_dialog() });
         $key_dispatcher->bind_normal('x' => sub { $self->open_tmux_window() });
         $key_dispatcher->bind_normal('e' => sub { $self->open_editor() });
@@ -152,6 +156,29 @@ class DoubleDrive::App {
             on_cancel => sub {
                 $active_pane->clear_search();
                 # Return control to active pane (redraw status bar and file list)
+                $active_pane->_render();
+            }
+        });
+    }
+
+    # Filter-specific command line mode
+    method enter_filter_cmdline() {
+        $cmdline_mode->enter({
+            on_init => sub {
+                $active_pane->update_filter("");
+                $status_bar->set_text("* (0 matches)");
+            },
+            on_change => sub ($query) {
+                my $match_count = $active_pane->update_filter($query);
+                my $status = "*$query ($match_count matches)";
+                $status_bar->set_text($status);
+            },
+            on_execute => sub ($query) {
+                # Keep filter active for continued navigation
+                $active_pane->_render();
+            },
+            on_cancel => sub {
+                $active_pane->clear_filter();
                 $active_pane->_render();
             }
         });

@@ -131,9 +131,10 @@ subtest 'all expected keys are registered' => sub {
 
         # Search
         field '/' => D();       # search
+        field '*' => D();       # filter
         field n => D();         # next match
         field N => D();         # prev match
-        field Escape => D();    # clear search
+        field Escape => D();    # clear search and filter
 
         # Commands
         field c => D();         # copy

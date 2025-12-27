@@ -28,6 +28,9 @@ class DoubleDrive::Pane {
     field $last_search_query = "";
     field $last_match_pos;                # Last position in match list (1-indexed)
 
+    # Filter state
+    field $filter_query = "";
+
     # Sort state
     field $sort_key = 'name';             # Current sort key: 'name', 'size', 'mtime', 'ext'
 
@@ -83,6 +86,16 @@ class DoubleDrive::Pane {
         }
     }
 
+    method _active_files() {
+        return $files if $filter_query eq "";
+
+        # Filter on demand
+        my $query_lc = fc($filter_query);
+        return [grep {
+            index(fc($_->basename), $query_lc) >= 0
+        } @$files];
+    }
+
     method after_window_attached() {
         $self->set_active($is_active);
         $self->_render();
@@ -93,7 +106,9 @@ class DoubleDrive::Pane {
         my $window = $file_list_view->window;
         return unless $window;
 
-        if (!@$files) {
+        my $active_files = $self->_active_files();
+
+        if (!@$active_files) {
             $file_list_view->set_rows([]);
             return;
         }
@@ -111,10 +126,10 @@ class DoubleDrive::Pane {
 
         # Build display lines with color highlighting for search matches
         my $rows = [];
-        my $end_index = min($scroll_offset + $height - 1, $#$files);
+        my $end_index = min($scroll_offset + $height - 1, $#$active_files);
 
         for my $index ($scroll_offset .. $end_index) {
-            my $item = $files->[$index];
+            my $item = $active_files->[$index];
 
             my $is_cursor = ($is_active && $index == $selected_index);
             push @$rows, {
@@ -132,11 +147,12 @@ class DoubleDrive::Pane {
     }
 
     method move_cursor($delta) {
-        return unless @$files;
+        my $active_files = $self->_active_files();
+        return unless @$active_files;
 
         my $new_index = $selected_index + $delta;
 
-        if ($new_index >= 0 && $new_index < scalar(@$files)) {
+        if ($new_index >= 0 && $new_index < scalar(@$active_files)) {
             $selected_index = $new_index;
             $self->_render();
         }
@@ -146,7 +162,8 @@ class DoubleDrive::Pane {
         $self->move_cursor(-$selected_index);
     }
     method move_cursor_bottom() {
-        $self->move_cursor($#$files - $selected_index);
+        my $active_files = $self->_active_files();
+        $self->move_cursor($#$active_files - $selected_index);
     }
 
     method change_directory($new_path) {
@@ -192,6 +209,9 @@ class DoubleDrive::Pane {
         $last_search_query = "";
         $last_match_pos = undef;
 
+        # Clear filter state when changing directories
+        $filter_query = "";
+
         $self->_load_directory();
 
         # Select the item we came from when moving to parent
@@ -209,8 +229,9 @@ class DoubleDrive::Pane {
     }
 
     method enter_selected() {
-        return unless @$files;
-        my $selected = $files->[$selected_index];
+        my $active_files = $self->_active_files();
+        return unless @$active_files;
+        my $selected = $active_files->[$selected_index];
         if ($selected->is_dir) {
             $self->change_directory($selected);
         } elsif ($selected->is_archive) {
@@ -238,14 +259,15 @@ class DoubleDrive::Pane {
     }
 
     method _status_text() {
-        my $total_files = scalar(@$files);
+        my $active_files = $self->_active_files();
+        my $total_files = scalar(@$active_files);
         my $base_status = $total_files == 0 ? "[0/0]" : do {
-            my $selected = $files->[$selected_index];
+            my $selected = $active_files->[$selected_index];
             my $name = $selected->basename;
             $name .= "/" if $selected->is_dir;
 
             my $position = $selected_index + 1;
-            my $selected_count = scalar(grep { $_->is_selected } @$files);
+            my $selected_count = scalar(grep { $_->is_selected } @$active_files);
 
             if ($selected_count > 0) {
                 sprintf("[%d/%d] (%d selected) %s", $position, $total_files, $selected_count, $name);
@@ -254,9 +276,9 @@ class DoubleDrive::Pane {
             }
         };
 
-        # Append search status if search query exists
-        my $search_status = $self->get_search_status();
-        return $base_status . $search_status;
+        # Append filter status if active, otherwise search status
+        my $suffix = $self->get_filter_status() || $self->get_search_status();
+        return $base_status . $suffix;
     }
 
     method _render_status_bar() {
@@ -266,9 +288,10 @@ class DoubleDrive::Pane {
     }
 
     method toggle_selection() {
-        return unless @$files;
+        my $active_files = $self->_active_files();
+        return unless @$active_files;
 
-        my $item = $files->[$selected_index];
+        my $item = $active_files->[$selected_index];
         $item->toggle_selected();
 
         # Render to show selection change
@@ -286,27 +309,39 @@ class DoubleDrive::Pane {
     }
 
     method get_files_to_operate() {
-        return [] unless @$files;
+        my $active_files = $self->_active_files();
+        return [] unless @$active_files;
 
         my $selected_items = [grep { $_->is_selected } @$files];
 
         if (@$selected_items) {
             return $selected_items;
         } else {
-            return [$files->[$selected_index]];
+            return [$active_files->[$selected_index]];
         }
     }
 
     method reload_directory() {
         # Remember the file the cursor was on
-        my $current_file_path = @$files ? $files->[$selected_index]->stringify : undef;
+        my $active_files = $self->_active_files();
+        my $current_file_path = @$active_files ? $active_files->[$selected_index]->stringify : undef;
+
+        # Remember filter state
+        my $saved_filter_query = $filter_query;
 
         $self->_load_directory();
 
-        if (@$files) {
+        # Reapply filter if it was active
+        if ($saved_filter_query ne "") {
+            $self->update_filter($saved_filter_query);
+        }
+
+        $active_files = $self->_active_files();
+
+        if (@$active_files) {
             # Try to find the same file in the reloaded list
             my $new_index;
-            for my ($i, $file) (indexed @$files) {
+            for my ($i, $file) (indexed @$active_files) {
                 next unless defined $current_file_path;
                 if ($file->stringify eq $current_file_path) {
                     $new_index = $i;
@@ -317,7 +352,7 @@ class DoubleDrive::Pane {
             # If file not found (was deleted), keep similar position
             if (!defined $new_index) {
                 $new_index = $selected_index;
-                $new_index = $#$files if $new_index > $#$files;
+                $new_index = $#$active_files if $new_index > $#$active_files;
             }
 
             $selected_index = $new_index;
@@ -417,6 +452,39 @@ class DoubleDrive::Pane {
         if ($last_search_query ne "" && @$match_indices) {
             my $total = scalar(@$match_indices);
             return " [search: $last_search_query ($last_match_pos/$total)]";
+        }
+        return "";
+    }
+
+    method update_filter($query) {
+        $filter_query = $query;
+
+        # Reset cursor to first item when filter changes
+        $selected_index = 0;
+
+        $self->_render();
+
+        # Return match count for status bar
+        my $active_files = $self->_active_files();
+        return scalar(@$active_files);
+    }
+
+    method clear_filter() {
+        my $previous_index = $selected_index;
+        $self->update_filter("");
+
+        # Ensure cursor is within bounds after clearing
+        if ($selected_index >= scalar(@$files)) {
+            $selected_index = $#$files if @$files;
+            $selected_index = 0 unless @$files;
+        }
+    }
+
+    method get_filter_status() {
+        if ($filter_query ne "") {
+            my $active_files = $self->_active_files();
+            my $total = scalar(@$active_files);
+            return " [filter: $filter_query ($total)]";
         }
         return "";
     }
