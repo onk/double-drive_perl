@@ -82,6 +82,7 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal('Tab' => sub { $self->switch_pane() });
         $key_dispatcher->bind_normal('Backspace' => sub { $active_pane->change_directory("..") });
         $key_dispatcher->bind_normal(' ' => sub { $active_pane->toggle_selection() });
+        $key_dispatcher->bind_normal('a' => sub { $active_pane->select_all() });
         $key_dispatcher->bind_normal('L' => sub { $self->jump_to_registered_directory() });
         $key_dispatcher->bind_normal('d' => sub {
             DoubleDrive::Command::Delete->new(

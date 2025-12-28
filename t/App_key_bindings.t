@@ -128,6 +128,7 @@ subtest 'all expected keys are registered' => sub {
 
         # Selection
         field ' ' => D();       # toggle selection
+        field a => D();         # select all
 
         # Search
         field '/' => D();       # search

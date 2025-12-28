@@ -301,6 +301,16 @@ class DoubleDrive::Pane {
         $self->move_cursor(1);
     }
 
+    method select_all() {
+        my $active_files = $self->_active_files();
+        return unless @$active_files;
+
+        for my $file (@$active_files) {
+            $file->toggle_selected() unless $file->is_selected;
+        }
+        $self->_render();
+    }
+
     method clear_selection() {
         for my $file (@$files) {
             $file->toggle_selected() if $file->is_selected;
