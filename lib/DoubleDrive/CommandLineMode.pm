@@ -8,7 +8,7 @@ class DoubleDrive::CommandLineMode {
     field $tickit :param;
     field $key_dispatcher :param;
     field $cmdline_input;
-    field $cmdline_key_handler;  # Event handler ID for cleanup
+    field $cmdline_key_handler;    # Event handler ID for cleanup
 
     ADJUST {
         $cmdline_input = DoubleDrive::CommandInput->new();

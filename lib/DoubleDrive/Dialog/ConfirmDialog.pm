@@ -5,9 +5,9 @@ use experimental 'class';
 class DoubleDrive::Dialog::ConfirmDialog :isa(DoubleDrive::Dialog::Base) {
     use DoubleDrive::Dialog::Base;
 
-    field $on_execute :param;  # Callback for Yes/OK
-    field $on_cancel :param = sub {};   # Callback for No/Escape
-    field $selected_option = 'yes';  # 'yes' or 'no'
+    field $on_execute :param;             # Callback for Yes/OK
+    field $on_cancel :param = sub { };    # Callback for No/Escape
+    field $selected_option = 'yes';       # 'yes' or 'no'
 
     method _instruction_text() {
         if ($selected_option eq 'yes') {

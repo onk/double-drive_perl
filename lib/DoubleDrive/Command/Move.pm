@@ -46,8 +46,7 @@ class DoubleDrive::Command::Move {
                 await $on_confirm->($message, 'Confirm');
             }
             await $self->_perform_future($file_items);
-        }
-        catch ($e) {
+        } catch ($e) {
             return if $self->_is_cancelled($e);
             await $on_alert->("Failed to move:\n- (move): $e", 'Error');
         }
@@ -104,8 +103,7 @@ class DoubleDrive::Command::Move {
         $opposite_pane->reload_directory();
 
         if (@$failed) {
-            my $error_msg = "Failed to move:\n" .
-                join("\n", map { "- $_->{file}: $_->{error}" } @$failed);
+            my $error_msg = "Failed to move:\n" . join("\n", map { "- $_->{file}: $_->{error}" } @$failed);
             await $on_alert->($error_msg, 'Error');
         }
     }

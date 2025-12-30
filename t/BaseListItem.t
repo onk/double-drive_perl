@@ -50,7 +50,7 @@ subtest 'size' => sub {
 
 subtest 'mtime' => sub {
     subtest 'returns mtime from stat' => sub {
-        my $expected_mtime = 1_609_459_200;  # 2021-01-01
+        my $expected_mtime = 1_609_459_200;    # 2021-01-01
         my $stat_double = mock {} => (
             add => [
                 mtime => sub { $expected_mtime },
@@ -70,20 +70,20 @@ subtest 'mtime' => sub {
 subtest 'extname' => sub {
     my $test_cases = [
         # [filename, expected_ext, description]
-        ['test.txt',        '.txt',    'regular file with extension'],
-        ['archive.tar.gz',  '.gz',     'file with multiple dots (returns last)'],
-        ['README',          '',        'file without extension'],
-        ['Makefile',        '',        'file without extension (uppercase)'],
-        ['.vimrc',          '',        'dotfile without extension'],
-        ['.bashrc',         '',        'dotfile without extension'],
-        ['.config.yaml',    '.yaml',   'dotfile with extension'],
-        ['.git.ignore',     '.ignore', 'dotfile with extension (multiple dots)'],
-        ['file.',           '.',       'file ending with dot'],
-        ['.',               '',        'dot directory'],
-        ['..',              '',        'double dot directory'],
-        ['a.b.c.d',         '.d',      'multiple extensions (returns last)'],
-        ['foo.TXT',         '.TXT',    'extension with uppercase'],
-        ['bar.HTML',        '.HTML',   'extension with uppercase'],
+        [ 'test.txt', '.txt', 'regular file with extension' ],
+        [ 'archive.tar.gz', '.gz', 'file with multiple dots (returns last)' ],
+        [ 'README', '', 'file without extension' ],
+        [ 'Makefile', '', 'file without extension (uppercase)' ],
+        [ '.vimrc', '', 'dotfile without extension' ],
+        [ '.bashrc', '', 'dotfile without extension' ],
+        [ '.config.yaml', '.yaml', 'dotfile with extension' ],
+        [ '.git.ignore', '.ignore', 'dotfile with extension (multiple dots)' ],
+        [ 'file.', '.', 'file ending with dot' ],
+        [ '.', '', 'dot directory' ],
+        [ '..', '', 'double dot directory' ],
+        [ 'a.b.c.d', '.d', 'multiple extensions (returns last)' ],
+        [ 'foo.TXT', '.TXT', 'extension with uppercase' ],
+        [ 'bar.HTML', '.HTML', 'extension with uppercase' ],
     ];
 
     for my $case (@$test_cases) {
@@ -174,7 +174,8 @@ subtest 'format_mtime' => sub_at {
         my $item = TestListItem->new(stat_value => undef);
         is $item->format_mtime, undef, 'returns undef when stat is undef';
     };
-} '2025-01-15T10:30:00Z';
+}
+'2025-01-15T10:30:00Z';
 
 subtest 'format_name' => sub {
     subtest 'file name formatting' => sub {
@@ -262,13 +263,13 @@ subtest 'format_mode' => sub {
     subtest 'formats various permission bits' => sub {
         my $test_cases = [
             # [mode, is_dir, expected, description]
-            [0777, false, '-rwxrwxrwx', 'all permissions'],
-            [0700, false, '-rwx------', 'owner only'],
-            [0070, false, '----rwx---', 'group only'],
-            [0007, false, '-------rwx', 'other only'],
-            [0000, false, '----------', 'no permissions'],
-            [0755, true,  'drwxr-xr-x', 'typical directory'],
-            [0600, false, '-rw-------', 'private file'],
+            [ 0777, false, '-rwxrwxrwx', 'all permissions' ],
+            [ 0700, false, '-rwx------', 'owner only' ],
+            [ 0070, false, '----rwx---', 'group only' ],
+            [ 0007, false, '-------rwx', 'other only' ],
+            [ 0000, false, '----------', 'no permissions' ],
+            [ 0755, true, 'drwxr-xr-x', 'typical directory' ],
+            [ 0600, false, '-rw-------', 'private file' ],
         ];
 
         for my $case (@$test_cases) {

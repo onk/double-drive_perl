@@ -51,11 +51,13 @@ class DoubleDrive::KeyDispatcher {
     method _ensure_binding($key) {
         return if $bound_keys->{$key};
 
-        $tickit->bind_key($key => sub {
-            return if $command_line_mode;  # Command line mode keys handled separately via bind_event
-            my $cb = $dialog_mode ? $dialog_keys->{$key} : $normal_keys->{$key};
-            $cb->() if $cb;
-        });
+        $tickit->bind_key(
+            $key => sub {
+                return if $command_line_mode;    # Command line mode keys handled separately via bind_event
+                my $cb = $dialog_mode ? $dialog_keys->{$key} : $normal_keys->{$key};
+                $cb->() if $cb;
+            }
+        );
 
         $bound_keys->{$key} = 1;
     }

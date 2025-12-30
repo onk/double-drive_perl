@@ -8,21 +8,26 @@ use DoubleDrive::CommandLineMode;
 
 {
     package MockTickit;
+
     sub new ($class) {
         bless { handlers => {}, next_id => 0 }, $class;
     }
     sub rootwin ($self) { $self }
+
     sub bind_event ($self, %args) {
         my $id = $self->{next_id}++;
         $self->{handlers}{$id} = { event => $args{key}, cb => $args{key} };
         return $id;
     }
+
     sub unbind_event_id ($self, $id) {
         delete $self->{handlers}{$id} if defined $id;
     }
+
     sub get_handler ($self, $id) {
         return $self->{handlers}{$id};
     }
+
     sub handler_count ($self) {
         return scalar(keys %{ $self->{handlers} });
     }
@@ -30,6 +35,7 @@ use DoubleDrive::CommandLineMode;
 
 {
     package MockKeyDispatcher;
+
     sub new ($class) {
         bless { in_cmdline => 0 }, $class;
     }
@@ -40,6 +46,7 @@ use DoubleDrive::CommandLineMode;
 
 {
     package MockKeyInfo;
+
     sub new ($class, $type, $str) {
         bless { type => $type, str => $str }, $class;
     }
@@ -122,7 +129,7 @@ subtest 'on_change callback on text input' => sub {
 
     $info = MockKeyInfo->new("text", "b");
     $handler->(undef, undef, $info, undef);
-    is $changes, ["a", "ab"], 'on_change called with "ab"';
+    is $changes, [ "a", "ab" ], 'on_change called with "ab"';
 };
 
 subtest 'on_change callback on backspace' => sub {

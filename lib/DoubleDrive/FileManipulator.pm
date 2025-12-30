@@ -12,7 +12,7 @@ class DoubleDrive::FileManipulator {
         for my $item (@$file_items) {
             my $file = $item->path;
             my $dest_file = $dest_path->child($file->basename);
-            my $dest_str  = $dest_file->stringify;
+            my $dest_str = $dest_file->stringify;
 
             # -e misses broken symlinks; include -l to catch them
             push @$existing, $item->basename if (-e $dest_str || -l $dest_str);
@@ -29,7 +29,7 @@ class DoubleDrive::FileManipulator {
         for my $item (@$file_items) {
             my $file = $item->path;
             my $file_str = $file->stringify;
-            next if -l $file_str;  # treat symlinks as files, not directories
+            next if -l $file_str;    # treat symlinks as files, not directories
             next unless $file->is_dir;
             my $src_abs = $file->realpath;
             my $src_str = $src_abs->stringify;
@@ -38,7 +38,7 @@ class DoubleDrive::FileManipulator {
             # Boundary check so /foo does not match /foobar
             my $next_char = substr($dest_str, length($src_str), 1);
             if ($next_char eq '' || $next_char eq '/') {
-                return true;  # destination is inside or equal to source
+                return true;    # destination is inside or equal to source
             }
         }
 

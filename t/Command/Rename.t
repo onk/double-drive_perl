@@ -23,10 +23,11 @@ use Path::Tiny qw(path tempfile tempdir);
             clear_selection_called => 0,
         }, $class;
     }
+
     sub get_files_to_operate {
         my $self = shift;
-        return [] unless @{$self->{files}};
-        my @selected = grep { $_->is_selected } @{$self->{files}};
+        return [] unless @{ $self->{files} };
+        my @selected = grep { $_->is_selected } @{ $self->{files} };
         return @selected ? \@selected : [ $self->{files}[0] ];
     }
     sub current_path { $_[0]->{current_path} }
@@ -36,12 +37,16 @@ use Path::Tiny qw(path tempfile tempdir);
 
 {
     package ContextStub;
+
     sub new {
         my ($class, $pane) = @_;
         bless { pane => $pane }, $class;
     }
     sub active_pane { $_[0]->{pane} }
-    sub on_status_change { sub {} }
+
+    sub on_status_change {
+        sub { }
+    }
 }
 
 # Helper to create a file or directory item
@@ -91,7 +96,7 @@ subtest 'rename single file at cursor' => sub {
 
     is scalar(@$system_calls), 1, 'system was called once';
     is $system_calls->[0][0], 'mmv', 'called mmv command';
-    is scalar(@{$system_calls->[0]}), 2, 'mmv called with 1 file path';
+    is scalar(@{ $system_calls->[0] }), 2, 'mmv called with 1 file path';
     is $system_calls->[0][1], $file->path->basename, 'correct basename passed to mmv';
     is $pane->{reload_called}, 1, 'reload_directory was called';
     is $pane->{clear_selection_called}, 1, 'clear_selection was called';
@@ -114,7 +119,7 @@ subtest 'rename multiple selected files' => sub {
 
     is scalar(@$system_calls), 1, 'system was called once';
     is $system_calls->[0][0], 'mmv', 'called mmv command';
-    is scalar(@{$system_calls->[0]}), 3, 'mmv called with 2 file paths';
+    is scalar(@{ $system_calls->[0] }), 3, 'mmv called with 2 file paths';
     is $system_calls->[0][1], $file1->path->basename, 'first file basename passed to mmv';
     is $system_calls->[0][2], $file2->path->basename, 'second file basename passed to mmv';
     is $pane->{reload_called}, 1, 'reload_directory was called';
@@ -138,7 +143,7 @@ subtest 'rename mixed files and directories' => sub {
 
     is scalar(@$system_calls), 1, 'system was called once';
     is $system_calls->[0][0], 'mmv', 'called mmv command';
-    is scalar(@{$system_calls->[0]}), 4, 'mmv called with 3 paths (files and directories)';
+    is scalar(@{ $system_calls->[0] }), 4, 'mmv called with 3 paths (files and directories)';
     is $system_calls->[0][1], $file1->path->basename, 'first file basename passed to mmv';
     is $system_calls->[0][2], $dir1->path->basename, 'directory basename passed to mmv';
     is $system_calls->[0][3], $file2->path->basename, 'second file basename passed to mmv';

@@ -26,7 +26,7 @@ subtest 'toggle_selection marks file and moves cursor down' => sub {
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
         is_active => 1,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     # Cursor starts at first file; toggle selection
@@ -46,10 +46,10 @@ subtest 'toggle_selection on cursor shows >* indicator' => sub {
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
         is_active => 1,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
-    $pane->toggle_selection(); # select file1, cursor moves to file2
+    $pane->toggle_selection();    # select file1, cursor moves to file2
 
     # Move back to selected file
     @$texts = ();
@@ -67,15 +67,15 @@ subtest 'toggle_selection twice deselects file' => sub {
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
         is_active => 1,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     # Select and deselect on same file
-    $pane->toggle_selection(); # selects file1, moves to file2
+    $pane->toggle_selection();    # selects file1, moves to file2
     @$texts = ();
     # Move back to file1 and toggle again to deselect
     $pane->move_cursor(-1);
-    $pane->toggle_selection(); # deselects file1, moves to file2
+    $pane->toggle_selection();    # deselects file1, moves to file2
 
     my @lines = split /\n/, $texts->[-1];
     is $lines[0], '  file1         0.0B  01/15 10:30 -rw-r--r--', 'file1 deselected';
@@ -89,12 +89,12 @@ subtest 'get_files_to_operate returns selected files in file list order' => sub 
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     # Select file1 and file2 (list order: file1, file2, file3)
-    $pane->toggle_selection();     # selects file1, moves to file2
-    $pane->toggle_selection();     # selects file2, moves to file3
+    $pane->toggle_selection();    # selects file1, moves to file2
+    $pane->toggle_selection();    # selects file2, moves to file3
 
     my $files = $pane->get_files_to_operate();
     is scalar(@$files), 2, 'returns 2 selected files';
@@ -109,7 +109,7 @@ subtest 'get_files_to_operate returns current file when none selected' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     my $files = $pane->get_files_to_operate();
@@ -126,7 +126,7 @@ subtest 'selection cleared when changing directory' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     # Move to b_file2 (index 1) and select it

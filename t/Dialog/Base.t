@@ -22,6 +22,7 @@ use DoubleDrive::Dialog::AlertDialog;
 {
     package MockScope;
     sub new { bless { bindings => {} }, shift }
+
     sub bind {
         my ($self, $key, $cb) = @_;
         $self->{bindings}{$key} = $cb;
@@ -32,9 +33,10 @@ use DoubleDrive::Dialog::AlertDialog;
 {
     package MockFloatBox;
     sub new { bless { floats => [] }, shift }
+
     sub add_float {
         my ($self, %args) = @_;
-        push @{$self->{floats}}, \%args;
+        push @{ $self->{floats} }, \%args;
         return bless { floats => $self->{floats}, record => \%args }, 'MockFloatHandle';
     }
     sub floats { $_[0]->{floats} }
@@ -42,18 +44,21 @@ use DoubleDrive::Dialog::AlertDialog;
 
 {
     package MockFloatHandle;
+
     sub remove {
         my ($self) = @_;
-        @{$self->{floats}} = grep { $_ ne $self->{record} } @{$self->{floats}};
+        @{ $self->{floats} } = grep { $_ ne $self->{record} } @{ $self->{floats} };
     }
 }
 
 {
     package MockTickit;
+
     sub new {
         my ($class, $rows, $cols) = @_;
         bless { rows => $rows, cols => $cols }, $class;
     }
+
     sub term {
         my ($self) = @_;
         bless { rows => $self->{rows}, cols => $self->{cols} }, 'MockTerm';
@@ -62,6 +67,7 @@ use DoubleDrive::Dialog::AlertDialog;
 
 {
     package MockTerm;
+
     sub get_size {
         my ($self) = @_;
         return ($self->{rows}, $self->{cols});
@@ -80,7 +86,7 @@ subtest 'layout computation - standard terminal (80x24)' => sub {
         key_scope => MockScope->new,
         title => 'Test',
         message => 'Short message',
-        on_ack => sub {},
+        on_ack => sub { },
     );
 
     my $layout = $dialog->_compute_layout();
@@ -103,7 +109,7 @@ subtest 'layout computation - small terminal (40x10)' => sub {
         key_scope => MockScope->new,
         title => 'Test',
         message => 'Message',
-        on_ack => sub {},
+        on_ack => sub { },
     );
 
     my $layout = $dialog->_compute_layout();

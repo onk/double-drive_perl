@@ -5,17 +5,17 @@ use experimental 'class';
 class DoubleDrive::Dialog::SortDialog :isa(DoubleDrive::Dialog::Base) {
     use DoubleDrive::Dialog::Base;
 
-    field $on_execute :param;       # Callback with selected sort option
-    field $on_cancel :param = sub {};
-    field $selected_index = 0;     # Index of currently selected option
+    field $on_execute :param;     # Callback with selected sort option
+    field $on_cancel :param = sub { };
+    field $selected_index = 0;    # Index of currently selected option
 
     # Available sort options (ordered for display)
-    field $sort_option_order = ['n', 's', 't', 'x'];
+    field $sort_option_order = [ 'n', 's', 't', 'x' ];
     field $sort_options = {
-        n => { sort_key => 'name',  label => '[N]ame' },
-        s => { sort_key => 'size',  label => '[S]ize' },
+        n => { sort_key => 'name', label => '[N]ame' },
+        s => { sort_key => 'size', label => '[S]ize' },
         t => { sort_key => 'mtime', label => '[T]ime' },
-        x => { sort_key => 'ext',   label => 'e[X]tension' },
+        x => { sort_key => 'ext', label => 'e[X]tension' },
     };
 
     method _instruction_text() {

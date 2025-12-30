@@ -124,7 +124,7 @@ subtest 'successfully create directory and change to it' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $pane,
         opposite_pane => mock_pane(),
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub { die "should not be called" },
         on_alert => sub { die "should not be called" },
     );
@@ -156,7 +156,7 @@ subtest 'create directory with unicode name' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $pane,
         opposite_pane => mock_pane(),
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub { die "should not be called" },
         on_alert => sub { die "should not be called" },
     );

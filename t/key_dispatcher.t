@@ -9,6 +9,7 @@ use DoubleDrive::KeyDispatcher;
 {
     package MockTickit;
     sub new { bless { bound => {} }, shift }
+
     sub bind_key {
         my ($self, $key, $cb) = @_;
         $self->{bound}{$key} = $cb;
@@ -34,11 +35,11 @@ subtest 'normal vs dialog bindings' => sub {
     is scalar(keys %{ $tickit->bound }), 1, 'dialog bind reuses existing binding';
 
     $tickit->bound->{a}->();
-    is [$normal, $dialog], [1, 1], 'dialog callback takes precedence';
+    is [ $normal, $dialog ], [ 1, 1 ], 'dialog callback takes precedence';
 
-    undef $scope;  # dialog scope destroyed -> exit dialog mode and clear dialog bindings
+    undef $scope;    # dialog scope destroyed -> exit dialog mode and clear dialog bindings
     $tickit->bound->{a}->();
-    is [$normal, $dialog], [2, 1], 'back to normal callback after dialog exit';
+    is [ $normal, $dialog ], [ 2, 1 ], 'back to normal callback after dialog exit';
 };
 
 subtest 'multiple keys and overwrite' => sub {
@@ -53,12 +54,12 @@ subtest 'multiple keys and overwrite' => sub {
 
     $tickit->bound->{a}->();
     $tickit->bound->{b}->();
-    is [$a1, $a2, $b], [1, 0, 1], 'initial callbacks fire';
+    is [ $a1, $a2, $b ], [ 1, 0, 1 ], 'initial callbacks fire';
 
     # overwrite normal binding for a
     $dispatcher->bind_normal('a' => sub { $a2++ });
     $tickit->bound->{a}->();
-    is [$a1, $a2, $b], [1, 1, 1], 'new binding replaces old for same key';
+    is [ $a1, $a2, $b ], [ 1, 1, 1 ], 'new binding replaces old for same key';
 };
 
 subtest 'dialog mode with missing dialog binding does nothing' => sub {
@@ -67,7 +68,7 @@ subtest 'dialog mode with missing dialog binding does nothing' => sub {
 
     my $normal = 0;
     $dispatcher->bind_normal('x' => sub { $normal++ });
-    my $scope = $dispatcher->dialog_scope;  # no dialog binding for x
+    my $scope = $dispatcher->dialog_scope;    # no dialog binding for x
 
     ok(
         lives { $tickit->bound->{x}->() },
@@ -92,17 +93,17 @@ subtest 'new scope after previous dialog still binds' => sub {
     $scope1->bind('Enter' => sub { $first++ });
 
     $tickit->bound->{Enter}->();
-    is [$normal, $first, $second], [0, 1, 0], 'first scope takes precedence';
+    is [ $normal, $first, $second ], [ 0, 1, 0 ], 'first scope takes precedence';
 
-    undef $scope1;  # destroy first scope -> leave dialog mode
+    undef $scope1;    # destroy first scope -> leave dialog mode
     $tickit->bound->{Enter}->();
-    is [$normal, $first, $second], [1, 1, 0], 'normal binding restored after first scope';
+    is [ $normal, $first, $second ], [ 1, 1, 0 ], 'normal binding restored after first scope';
 
     my $scope2 = $dispatcher->dialog_scope;
     $scope2->bind('Enter' => sub { $second++ });
 
     $tickit->bound->{Enter}->();
-    is [$normal, $first, $second], [1, 1, 1], 'second scope binds correctly after prior scope';
+    is [ $normal, $first, $second ], [ 1, 1, 1 ], 'second scope binds correctly after prior scope';
 };
 
 subtest 'nested scopes restore outer bindings after inner closes' => sub {
@@ -119,15 +120,15 @@ subtest 'nested scopes restore outer bindings after inner closes' => sub {
     $inner_scope->bind('Enter' => sub { $inner++ });
 
     $tickit->bound->{Enter}->();
-    is [$normal, $outer, $inner], [0, 0, 1], 'inner scope binding active';
+    is [ $normal, $outer, $inner ], [ 0, 0, 1 ], 'inner scope binding active';
 
-    undef $inner_scope;  # end inner scope, outer still active
+    undef $inner_scope;    # end inner scope, outer still active
     $tickit->bound->{Enter}->();
-    is [$normal, $outer, $inner], [0, 1, 1], 'outer binding restored after inner scope ends';
+    is [ $normal, $outer, $inner ], [ 0, 1, 1 ], 'outer binding restored after inner scope ends';
 
     undef $outer_scope;
     $tickit->bound->{Enter}->();
-    is [$normal, $outer, $inner], [1, 1, 1], 'normal binding restored after all scopes end';
+    is [ $normal, $outer, $inner ], [ 1, 1, 1 ], 'normal binding restored after all scopes end';
 };
 
 done_testing;

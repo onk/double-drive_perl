@@ -26,13 +26,13 @@ class DoubleDrive::App {
     field $tickit;
     field $config;
     field $state_store;
-    field $left_pane :reader;    # :reader for testing
-    field $right_pane :reader;   # :reader for testing
-    field $active_pane :reader;  # :reader for testing
+    field $left_pane :reader;      # :reader for testing
+    field $right_pane :reader;     # :reader for testing
+    field $active_pane :reader;    # :reader for testing
     field $status_bar;
-    field $float_box;  # FloatBox for dialogs
+    field $float_box;              # FloatBox for dialogs
     field $key_dispatcher;
-    field $cmdline_mode;         # CommandLineMode instance for managing command line input
+    field $cmdline_mode;           # CommandLineMode instance for managing command line input
 
     ADJUST {
         $config = DoubleDrive::Config->new;
@@ -84,54 +84,62 @@ class DoubleDrive::App {
         $key_dispatcher->bind_normal(' ' => sub { $active_pane->toggle_selection() });
         $key_dispatcher->bind_normal('a' => sub { $active_pane->select_all() });
         $key_dispatcher->bind_normal('L' => sub { $self->jump_to_registered_directory() });
-        $key_dispatcher->bind_normal('d' => sub {
-            DoubleDrive::Command::Delete->new(
-                context => $self->command_context()
-            )->execute();
-        });
-        $key_dispatcher->bind_normal('c' => sub {
-            DoubleDrive::Command::Copy->new(
-                context => $self->command_context()
-            )->execute();
-        });
-        $key_dispatcher->bind_normal('m' => sub {
-            DoubleDrive::Command::Move->new(
-                context => $self->command_context()
-            )->execute();
-        });
-        $key_dispatcher->bind_normal('r' => sub {
-            DoubleDrive::Command::Rename->new(
-                context => $self->command_context(),
-                external_command_runner => sub { $self->run_external_command(@_) },
-            )->execute();
-        });
+        $key_dispatcher->bind_normal(
+            'd' => sub {
+                DoubleDrive::Command::Delete->new(context => $self->command_context())->execute();
+            }
+        );
+        $key_dispatcher->bind_normal(
+            'c' => sub {
+                DoubleDrive::Command::Copy->new(context => $self->command_context())->execute();
+            }
+        );
+        $key_dispatcher->bind_normal(
+            'm' => sub {
+                DoubleDrive::Command::Move->new(context => $self->command_context())->execute();
+            }
+        );
+        $key_dispatcher->bind_normal(
+            'r' => sub {
+                DoubleDrive::Command::Rename->new(
+                    context => $self->command_context(),
+                    external_command_runner => sub { $self->run_external_command(@_) },
+                )->execute();
+            }
+        );
         # View image with kitty icat when selecting a jpg/png/gif
-        $key_dispatcher->bind_normal('v' => sub {
-            DoubleDrive::Command::ViewFile->new(
-                context => $self->command_context(),
-                tickit => $tickit,
-                dialog_scope => $key_dispatcher->dialog_scope,
-                is_left => ($active_pane == $left_pane),
-                external_command_runner => sub { $self->run_external_command(@_) },
-            )->execute();
-        });
+        $key_dispatcher->bind_normal(
+            'v' => sub {
+                DoubleDrive::Command::ViewFile->new(
+                    context => $self->command_context(),
+                    tickit => $tickit,
+                    dialog_scope => $key_dispatcher->dialog_scope,
+                    is_left => ($active_pane == $left_pane),
+                    external_command_runner => sub { $self->run_external_command(@_) },
+                )->execute();
+            }
+        );
         $key_dispatcher->bind_normal('/' => sub { $self->enter_search_cmdline() });
         $key_dispatcher->bind_normal('*' => sub { $self->enter_filter_cmdline() });
         $key_dispatcher->bind_normal('n' => sub { $active_pane->next_match() });
         $key_dispatcher->bind_normal('N' => sub { $active_pane->prev_match() });
-        $key_dispatcher->bind_normal('Escape' => sub {
-            $active_pane->clear_search();
-            $active_pane->clear_filter();
-        });
+        $key_dispatcher->bind_normal(
+            'Escape' => sub {
+                $active_pane->clear_search();
+                $active_pane->clear_filter();
+            }
+        );
         $key_dispatcher->bind_normal('s' => sub { $self->show_sort_dialog() });
         $key_dispatcher->bind_normal('x' => sub { $self->open_tmux_window() });
         $key_dispatcher->bind_normal('e' => sub { $self->open_editor() });
-        $key_dispatcher->bind_normal('K' => sub {
-            DoubleDrive::Command::MakeDir->new(
-                context => $self->command_context(),
-                cmdline_mode => $cmdline_mode,
-            )->execute();
-        });
+        $key_dispatcher->bind_normal(
+            'K' => sub {
+                DoubleDrive::Command::MakeDir->new(
+                    context => $self->command_context(),
+                    cmdline_mode => $cmdline_mode,
+                )->execute();
+            }
+        );
         $key_dispatcher->bind_normal('q' => sub { $self->quit() });
     }
 
@@ -144,7 +152,8 @@ class DoubleDrive::App {
             },
             on_change => sub ($query) {
                 my $match_count = $active_pane->update_search($query);
-                my $status = $match_count > 0
+                my $status =
+                    $match_count > 0
                     ? "/$query ($match_count matches)"
                     : "/$query (no matches)";
                 $status_bar->set_text($status);
@@ -201,10 +210,10 @@ class DoubleDrive::App {
             opposite_pane => $self->opposite_pane(),
             on_status_change => sub ($text) { $status_bar->set_text($text) },
             on_confirm => async sub ($msg, $title = 'Confirm') {
-                await $self->confirm_dialog($msg, $title)
+                await $self->confirm_dialog($msg, $title);
             },
             on_alert => async sub ($msg, $title = 'Error') {
-                await $self->alert_dialog($msg, $title)
+                await $self->alert_dialog($msg, $title);
             },
         );
     }
@@ -271,7 +280,7 @@ class DoubleDrive::App {
         my $files = $active_pane->files;
         return unless @$files;
 
-        my $item = $files->[$active_pane->selected_index];
+        my $item = $files->[ $active_pane->selected_index ];
         return if $item->is_dir;
 
         my $path = $item->stringify;
@@ -285,9 +294,9 @@ class DoubleDrive::App {
             'tmux', 'new-window', '-c', $current_dir,
             'zsh', '-c',
             '${=1} "$2"; exec zsh -i',
-            'zsh',   # $0
-            $editor, # $1
-            $path    # $2
+            'zsh',      # $0
+            $editor,    # $1
+            $path       # $2
         );
         my $exit_code = $? >> 8;
 

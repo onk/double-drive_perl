@@ -125,11 +125,14 @@ subtest 'jumps to configured directory with tilde expansion' => sub {
     my $target = path($ENV{HOME}, 'jump_target')->absolute;
     $target->mkpath;
 
-    write_config($config_home, {
-        registered_directories => [
-            { name => 'jump', path => $target->stringify, key => 'j' },
-        ],
-    });
+    write_config(
+        $config_home,
+        {
+            registered_directories => [
+                { name => 'jump', path => $target->stringify, key => 'j' },
+            ],
+        }
+    );
 
     my $dialog_args;
     my ($app, $left_pane, $status_bar, $mocks) = build_app_with_mocks(\$dialog_args);

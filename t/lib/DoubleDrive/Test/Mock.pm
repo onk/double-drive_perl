@@ -14,13 +14,14 @@ use constant FIXED_MTIME => 1736937000;
 
 {
     package DoubleDrive::Test::Mock::StubStat;
+
     sub new {
         my ($class, %args) = @_;
         return bless \%args, $class;
     }
-    sub size  { shift->{size} }
+    sub size { shift->{size} }
     sub mtime { shift->{mtime} }
-    sub mode  { shift->{mode} // 0644 }  # Default to 0644
+    sub mode { shift->{mode} // 0644 }    # Default to 0644
 }
 
 sub StubStat (%args) {
@@ -37,7 +38,7 @@ sub capture_widget_text ($window) {
             set_rows => sub ($orig, $self, @args) {
                 $self->$orig(@args);
                 my $lines = $self->{lines} // [];
-                my $text  = join("\n", map { $_->{text} } @$lines);
+                my $text = join("\n", map { $_->{text} } @$lines);
                 push @texts, $text;
                 return $self;
             },
@@ -47,7 +48,7 @@ sub capture_widget_text ($window) {
 }
 
 sub mock_file_stat (%options) {
-    my $size  = $options{size}  // 0;
+    my $size = $options{size} // 0;
     my $mtime = $options{mtime} // FIXED_MTIME;
 
     return mock 'Path::Tiny' => (
@@ -60,6 +61,7 @@ sub mock_file_stat (%options) {
 # Mock Path::Tiny object for Command tests
 {
     package DoubleDrive::Test::Mock::MockPath;
+
     sub new($class, $name) {
         bless { name => $name }, $class;
     }
@@ -75,14 +77,13 @@ sub mock_path ($name) {
 # Mock Pane for Command tests
 {
     package DoubleDrive::Test::Mock::MockPane;
+
     sub new($class, %args) {
         my $path = $args{current_path} // DoubleDrive::Test::Mock::MockPath->new('/tmp');
         my $files = $args{files} // [];
 
         # Wrap MockPath objects in FileListItem
-        my $file_items = [map {
-            DoubleDrive::FileListItem->new(path => $_)
-        } @$files];
+        my $file_items = [ map { DoubleDrive::FileListItem->new(path => $_) } @$files ];
 
         bless {
             files => $file_items,
@@ -96,6 +97,7 @@ sub mock_path ($name) {
     sub reload_directory($self) { $self->{reload_called}++ }
     sub reload_called($self) { $self->{reload_called} }
     sub current_path($self) { $self->{current_path} }
+
     sub change_directory($self, $path) {
         $self->{change_directory_called}++;
         $self->{change_directory_arg} = $path;
@@ -111,6 +113,7 @@ sub mock_pane (%args) {
 # Mock Window for FileListView tests
 {
     package DoubleDrive::Test::Mock::MockWindow;
+
     sub new($class, $cols) {
         bless { cols => $cols }, $class;
     }
@@ -127,12 +130,14 @@ sub mock_rb_and_rect ($top, $bottom) {
 
     my $rb = bless {
         rendered => \@rendered,
-    }, 'DoubleDrive::Test::Mock::MockRB';
+        },
+        'DoubleDrive::Test::Mock::MockRB';
 
     my $rect = bless {
         top => $top,
         bottom => $bottom,
-    }, 'DoubleDrive::Test::Mock::MockRect';
+        },
+        'DoubleDrive::Test::Mock::MockRect';
 
     return ($rb, $rect, \@rendered);
 }
@@ -140,8 +145,9 @@ sub mock_rb_and_rect ($top, $bottom) {
 {
     package DoubleDrive::Test::Mock::MockRB;
     sub eraserect($self, $rect) { }
+
     sub text_at($self, $line, $col, $text, $pen = undef) {
-        push @{$self->{rendered}}, {
+        push @{ $self->{rendered} }, {
             line => $line,
             col => $col,
             text => $text,

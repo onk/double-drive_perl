@@ -13,7 +13,7 @@ class DoubleDrive::Archive::ReaderFactory {
 
         try {
             return DoubleDrive::Archive::Reader::Zip->new(archive_path => $archive_path);
-        } catch($e) {
+        } catch ($e) {
             return undef;
         }
     }

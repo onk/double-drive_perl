@@ -15,7 +15,7 @@ sub with_state_home ($code) {
 
 subtest 'save then load uses XDG_STATE_HOME' => sub {
     with_state_home sub ($state_home) {
-        my $left  = '/tmp/left';
+        my $left = '/tmp/left';
         my $right = '/tmp/right';
 
         my $store = DoubleDrive::StateStore->new;
@@ -25,7 +25,7 @@ subtest 'save then load uses XDG_STATE_HOME' => sub {
         ok $state_file->is_file, 'state file created';
 
         my $raw = decode_json($state_file->slurp_utf8);
-        is $raw->{left_path},  $left,  'left path saved';
+        is $raw->{left_path}, $left, 'left path saved';
         is $raw->{right_path}, $right, 'right path saved';
 
         my $loaded = $store->load_paths();

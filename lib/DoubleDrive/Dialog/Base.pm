@@ -32,8 +32,8 @@ class DoubleDrive::Dialog::Base {
 
         my $min_width = 30;
         my $fallback_wrap = 80;
-        my $base_width = $cols ? $cols - 44 : $fallback_wrap;   # roughly center with margins
-        my $max_width = $cols ? max($min_width, $cols - 4) : 120;  # leave a small border
+        my $base_width = $cols ? $cols - 44 : $fallback_wrap;        # roughly center with margins
+        my $max_width = $cols ? max($min_width, $cols - 4) : 120;    # leave a small border
 
         my $wrap_width = max($min_width, min($base_width, $max_width));
         my $wrapped;
@@ -50,13 +50,13 @@ class DoubleDrive::Dialog::Base {
             $left_margin = 10;
         }
 
-        my $top_margin = $rows ? int($rows / 4) : 4;  # near upper third by default
+        my $top_margin = $rows ? int($rows / 4) : 4;    # near upper third by default
 
         return {
-            text  => $wrapped,
-            left  => $left_margin,
+            text => $wrapped,
+            left => $left_margin,
             right => -$left_margin,
-            top   => $top_margin,
+            top => $top_margin,
         };
     }
 
@@ -86,7 +86,7 @@ class DoubleDrive::Dialog::Base {
         return $frame;
     }
 
-    method _bind_keys() { }  # override in subclasses
+    method _bind_keys() { }    # override in subclasses
 
     method _update_instruction() {
         $instruction_widget->set_text($self->_instruction_text());

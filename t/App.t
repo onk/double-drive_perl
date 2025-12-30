@@ -70,8 +70,9 @@ load_app_module();
 {
     package TestStatusBar;
     sub new($class, %args) { bless \%args, $class }
+
     sub set_text($self, $text) {
-        push @{$self->{texts}}, $text if $self->{texts};
+        push @{ $self->{texts} }, $text if $self->{texts};
     }
 }
 
@@ -151,7 +152,7 @@ sub mock_basic_app {
             right_pane => $right_pane,
             float_box => undef,
             status_bar => $status_bar,
-            tickit => \$tickit_obj,  # reference since it's set during App->new
+            tickit => \$tickit_obj,    # reference since it's set during App->new
         },
     };
 }
@@ -186,7 +187,7 @@ subtest 'initialization' => sub {
     is $app->active_pane, $left_pane, 'left pane is active initially';
 
     my $pane_tracking = $mock_pane->sub_tracking();
-    is scalar @{$pane_tracking->{after_window_attached}}, 2, 'after_window_attached called twice (left and right panes)';
+    is scalar @{ $pane_tracking->{after_window_attached} }, 2, 'after_window_attached called twice (left and right panes)';
 
     my $term_tracking = $mock_term->sub_tracking();
     my $setctl_int_calls = $term_tracking->{setctl_int};
@@ -274,16 +275,16 @@ subtest 'search mode' => sub {
         add => [
             update_search => sub {
                 my ($self, $query) = @_;
-                push @{$self->{update_search_calls}}, $query;
-                return ${$self->{next_match_count}};
+                push @{ $self->{update_search_calls} }, $query;
+                return ${ $self->{next_match_count} };
             },
             clear_search => sub {
                 my ($self) = @_;
-                ${$self->{clear_search_calls}}++;
+                ${ $self->{clear_search_calls} }++;
             },
             _render => sub {
                 my ($self) = @_;
-                ${$self->{render_calls}}++;
+                ${ $self->{render_calls} }++;
             },
         ],
     );
@@ -373,7 +374,7 @@ subtest 'confirm_dialog (confirmed)' => sub {
     is $result, 1, 'confirm_dialog resolves when acknowledged';
 
     my $new_call = $mock_confirm_dialog->sub_tracking->{new}[0];
-    my (undef, %args) = @{$new_call->{args}};
+    my (undef, %args) = @{ $new_call->{args} };
     is $args{message}, 'sure?', 'confirm dialog receives message';
     is $args{title}, 'Title', 'confirm dialog receives title';
 };
@@ -443,7 +444,7 @@ subtest 'alert_dialog' => sub {
     $future->get;
 
     my $new_call = $mock_alert_dialog->sub_tracking->{new}[0];
-    my (undef, %args) = @{$new_call->{args}};
+    my (undef, %args) = @{ $new_call->{args} };
     is $args{message}, 'boom', 'alert dialog receives message';
     is $args{title}, 'Error!', 'alert dialog receives title';
 };
@@ -477,13 +478,13 @@ subtest 'command_context' => sub {
     my $confirm_calls = $tracking->{confirm_dialog};
     ok $confirm_calls, 'confirm was called';
     is $confirm_calls->[0]{args}[0], $app, 'confirm closure passes app instance';
-    is [$confirm_calls->[0]{args}[1], $confirm_calls->[0]{args}[2]], ['hey', 'Please'], 'confirm closure passes message and title';
+    is [ $confirm_calls->[0]{args}[1], $confirm_calls->[0]{args}[2] ], [ 'hey', 'Please' ], 'confirm closure passes message and title';
 
     is $ctx->on_alert->('oops', 'Bad')->get, 'warn', 'context alert delegates to app alert';
     my $alert_calls = $tracking->{alert_dialog};
     ok $alert_calls, 'alert was called';
     is $alert_calls->[0]{args}[0], $app, 'alert closure passes app instance';
-    is [$alert_calls->[0]{args}[1], $alert_calls->[0]{args}[2]], ['oops', 'Bad'], 'alert closure passes message and title';
+    is [ $alert_calls->[0]{args}[1], $alert_calls->[0]{args}[2] ], [ 'oops', 'Bad' ], 'alert closure passes message and title';
 };
 
 done_testing;

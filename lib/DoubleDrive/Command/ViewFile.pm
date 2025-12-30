@@ -38,9 +38,7 @@ class DoubleDrive::Command::ViewFile {
         }
 
         # Filter image files
-        $image_files = [ grep {
-            $_->stringify =~ /\.(?:jpe?g|png|gif|bmp|tiff?|webp|svg|heic)$/i
-        } @$files ];
+        $image_files = [ grep { $_->stringify =~ /\.(?:jpe?g|png|gif|bmp|tiff?|webp|svg|heic)$/i } @$files ];
         return unless @$image_files;
 
         my ($rows, $cols) = $tickit->term->get_size;
@@ -60,8 +58,7 @@ class DoubleDrive::Command::ViewFile {
 
         try {
             $self->_show_image();
-        }
-        catch ($e) {
+        } catch ($e) {
             $self->_clear_image();
             $active_pane->stop_preview();
             $on_status_change->($e);
@@ -114,8 +111,7 @@ class DoubleDrive::Command::ViewFile {
         $current_index = ($current_index + 1) % @$image_files;
         try {
             $self->_show_image();
-        }
-        catch ($e) {
+        } catch ($e) {
             $on_status_change->($e);
             $self->_close();
         }
@@ -127,8 +123,7 @@ class DoubleDrive::Command::ViewFile {
         $current_index = ($current_index - 1) % @$image_files;
         try {
             $self->_show_image();
-        }
-        catch ($e) {
+        } catch ($e) {
             $on_status_change->($e);
             $self->_close();
         }

@@ -58,8 +58,7 @@ class DoubleDrive::Command::MakeDir {
         try {
             $new_dir_path->mkpath;
             $active_pane->change_directory($new_dir_path->stringify);
-        }
-        catch ($e) {
+        } catch ($e) {
             $on_status_change->("Failed to create directory: $e");
         }
     }

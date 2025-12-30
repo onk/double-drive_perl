@@ -13,26 +13,26 @@ class DoubleDrive::Pane {
     use List::Util qw(min first);
     use List::MoreUtils qw(firstidx);
 
-    field $path :param;              # Initial path (string or Path::Tiny object) passed to constructor
+    field $path :param;                         # Initial path (string or Path::Tiny object) passed to constructor
     field $on_status_change :param;
-    field $is_active :param :reader = false;  # :reader for testing
-    field $current_path :reader;     # Current directory as FileListItem or ArchiveItem object (:reader for testing)
-    field $files :reader = [];       # Array of FileListItem or ArchiveItem objects (:reader for testing)
-    field $selected_index :reader = 0;  # :reader for testing
-    field $scroll_offset = 0;        # First visible item index
+    field $is_active :param :reader = false;    # :reader for testing
+    field $current_path :reader;                # Current directory as FileListItem or ArchiveItem object (:reader for testing)
+    field $files :reader = [];                  # Array of FileListItem or ArchiveItem objects (:reader for testing)
+    field $selected_index :reader = 0;          # :reader for testing
+    field $scroll_offset = 0;                   # First visible item index
     field $widget :reader;
     field $file_list_view;
-    field $archive_root;             # Path to archive file when inside archive (undef otherwise)
+    field $archive_root;                        # Path to archive file when inside archive (undef otherwise)
 
     # Search state
     field $last_search_query = "";
-    field $last_match_pos;                # Last position in match list (1-indexed)
+    field $last_match_pos;                      # Last position in match list (1-indexed)
 
     # Filter state
     field $filter_query = "";
 
     # Sort state
-    field $sort_key = 'name';             # Current sort key: 'name', 'size', 'mtime', 'ext'
+    field $sort_key = 'name';                   # Current sort key: 'name', 'size', 'mtime', 'ext'
 
     ADJUST {
         $current_path = DoubleDrive::FileListItem->new(path => path($path)->realpath);
@@ -61,28 +61,13 @@ class DoubleDrive::Pane {
 
     method _sort_files($items) {
         if ($sort_key eq 'size') {
-            return [sort {
-                $b->is_dir <=> $a->is_dir ||
-                $b->size <=> $a->size ||
-                fc($a->basename) cmp fc($b->basename)
-            } @$items];
+            return [ sort { $b->is_dir <=> $a->is_dir || $b->size <=> $a->size || fc($a->basename) cmp fc($b->basename) } @$items ];
         } elsif ($sort_key eq 'mtime') {
-            return [sort {
-                $b->is_dir <=> $a->is_dir ||
-                $b->mtime <=> $a->mtime ||
-                fc($a->basename) cmp fc($b->basename)
-            } @$items];
+            return [ sort { $b->is_dir <=> $a->is_dir || $b->mtime <=> $a->mtime || fc($a->basename) cmp fc($b->basename) } @$items ];
         } elsif ($sort_key eq 'ext') {
-            return [sort {
-                $b->is_dir <=> $a->is_dir ||
-                fc($a->extname) cmp fc($b->extname) ||
-                fc($a->basename) cmp fc($b->basename)
-            } @$items];
-        } else {  # 'name' is default
-            return [sort {
-                $b->is_dir <=> $a->is_dir ||
-                fc($a->basename) cmp fc($b->basename)
-            } @$items];
+            return [ sort { $b->is_dir <=> $a->is_dir || fc($a->extname) cmp fc($b->extname) || fc($a->basename) cmp fc($b->basename) } @$items ];
+        } else {    # 'name' is default
+            return [ sort { $b->is_dir <=> $a->is_dir || fc($a->basename) cmp fc($b->basename) } @$items ];
         }
     }
 
@@ -91,9 +76,7 @@ class DoubleDrive::Pane {
 
         # Filter on demand
         my $query_lc = fc($filter_query);
-        return [grep {
-            index(fc($_->basename), $query_lc) >= 0
-        } @$files];
+        return [ grep { index(fc($_->basename), $query_lc) >= 0 } @$files ];
     }
 
     method after_window_attached() {
@@ -133,7 +116,7 @@ class DoubleDrive::Pane {
 
             my $is_cursor = ($is_active && $index == $selected_index);
             push @$rows, {
-                item      => $item,
+                item => $item,
                 is_cursor => $is_cursor,
             };
         }
@@ -161,6 +144,7 @@ class DoubleDrive::Pane {
     method move_cursor_top() {
         $self->move_cursor(-$selected_index);
     }
+
     method move_cursor_bottom() {
         my $active_files = $self->_active_files();
         $self->move_cursor($#$active_files - $selected_index);
@@ -243,7 +227,7 @@ class DoubleDrive::Pane {
         my $archive_root_item;
         try {
             $archive_root_item = DoubleDrive::ArchiveItem->new_from_archive($archive_item);
-        } catch($e) {
+        } catch ($e) {
             $on_status_change->("Cannot read archive: $e");
             return;
         }
@@ -322,12 +306,12 @@ class DoubleDrive::Pane {
         my $active_files = $self->_active_files();
         return [] unless @$active_files;
 
-        my $selected_items = [grep { $_->is_selected } @$files];
+        my $selected_items = [ grep { $_->is_selected } @$files ];
 
         if (@$selected_items) {
             return $selected_items;
         } else {
-            return [$active_files->[$selected_index]];
+            return [ $active_files->[$selected_index] ];
         }
     }
 
@@ -382,13 +366,13 @@ class DoubleDrive::Pane {
         my $match_indices = $self->_get_match_indices();
         if (@$match_indices) {
             $selected_index = $match_indices->[0];
-            $last_match_pos = 1;  # Set initial position to first match
+            $last_match_pos = 1;    # Set initial position to first match
         } else {
-            $last_match_pos = undef;  # Clear position if no matches
+            $last_match_pos = undef;    # Clear position if no matches
         }
 
         $self->_render();
-        return scalar(@$match_indices);  # Return match count for caller to display
+        return scalar(@$match_indices);    # Return match count for caller to display
     }
 
     method clear_search() {
@@ -510,7 +494,7 @@ class DoubleDrive::Pane {
     }
 
     method set_sort($new_sort_key) {
-        return if $sort_key eq $new_sort_key;  # No change needed
+        return if $sort_key eq $new_sort_key;    # No change needed
 
         # Remember current file for repositioning cursor
         my $current_file_path = @$files ? $files->[$selected_index]->stringify : undef;

@@ -27,13 +27,13 @@ class DoubleDrive::FileListItem :isa(DoubleDrive::BaseListItem) {
     method stat() {
         try {
             $path->stat
-        } catch($e) {
+        } catch ($e) {
             return undef;
         }
     }
 
     method children() {
-        return [map { DoubleDrive::FileListItem->new(path => $_) } $path->children];
+        return [ map { DoubleDrive::FileListItem->new(path => $_) } $path->children ];
     }
 
     method parent() {

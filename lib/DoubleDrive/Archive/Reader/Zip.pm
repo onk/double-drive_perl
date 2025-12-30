@@ -23,15 +23,15 @@ class DoubleDrive::Archive::Reader::Zip :isa(DoubleDrive::Archive::Reader) {
             my $filename = $member->fileName;
             # Archive::Zip may return already-decoded strings, handle both cases
             my $full_name = utf8::is_utf8($filename) ? $filename : decode_utf8($filename);
-            $full_name = NFC($full_name);  # Normalize to NFC
-            $full_name =~ s{^/+}{};  # Remove leading slashes
+            $full_name = NFC($full_name);    # Normalize to NFC
+            $full_name =~ s{^/+}{};          # Remove leading slashes
 
             # Skip if not under the requested path
             next unless $full_name =~ /^\Q$prefix\E/;
 
             # Get the relative path after the prefix
             my $relative = substr($full_name, length($prefix));
-            next if $relative eq '';  # Skip the directory itself
+            next if $relative eq '';         # Skip the directory itself
 
             # Check if this is a direct child
             my ($basename, $rest) = split '/', $relative, 2;
@@ -40,10 +40,10 @@ class DoubleDrive::Archive::Reader::Zip :isa(DoubleDrive::Archive::Reader) {
                 # This is a nested item, so we have an intermediate directory
                 # Add implicit directory only if not exists (explicit entries have priority)
                 $entries->{$basename} //= {
-                    path     => $internal_path eq '' ? $basename : "$internal_path/$basename",
-                    is_dir   => true,
-                    size     => 0,
-                    mtime    => time,  # Use current time for implicit directories
+                    path => $internal_path eq '' ? $basename : "$internal_path/$basename",
+                    is_dir => true,
+                    size => 0,
+                    mtime => time,    # Use current time for implicit directories
                     basename => $basename,
                 };
             } else {
@@ -55,29 +55,29 @@ class DoubleDrive::Archive::Reader::Zip :isa(DoubleDrive::Archive::Reader) {
                 my $mode = defined $external_attr ? ($external_attr >> 16) : undef;
 
                 $entries->{$basename} = {
-                    path       => $internal_path eq '' ? $basename : "$internal_path/$basename",
-                    is_dir     => $is_dir,
-                    size       => $is_dir ? 0 : $member->uncompressedSize,
-                    mtime      => $member->lastModTime,
-                    basename   => $basename,
-                    mode       => $mode,
+                    path => $internal_path eq '' ? $basename : "$internal_path/$basename",
+                    is_dir => $is_dir,
+                    size => $is_dir ? 0 : $member->uncompressedSize,
+                    mtime => $member->lastModTime,
+                    basename => $basename,
+                    mode => $mode,
                 };
             }
         }
 
-        return [values %$entries];
+        return [ values %$entries ];
     }
 
     method get_entry_info ($internal_path) {
         # Normalize internal path
-        $internal_path =~ s{^/+}{};  # Remove leading slashes
-        $internal_path =~ s{/+$}{};  # Remove trailing slashes
+        $internal_path =~ s{^/+}{};    # Remove leading slashes
+        $internal_path =~ s{/+$}{};    # Remove trailing slashes
 
-        return undef if $internal_path eq '';  # Archive root has no entry_info
+        return undef if $internal_path eq '';    # Archive root has no entry_info
 
         # Get parent path and basename
-        my $path_parts = [split '/', $internal_path];
-        my $parent_path = join('/', @$path_parts[0..$#$path_parts-1]);  # '' for root-level entries
+        my $path_parts = [ split '/', $internal_path ];
+        my $parent_path = join('/', @$path_parts[ 0 .. $#$path_parts - 1 ]);    # '' for root-level entries
         my $basename = $path_parts->[-1];
 
         # List entries in parent directory (or root) and find the target

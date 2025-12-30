@@ -9,6 +9,7 @@ use DoubleDrive::Dialog::SortDialog;
 {
     package MockScope;
     sub new { bless { bindings => {} }, shift }
+
     sub bind {
         my ($self, $key, $cb) = @_;
         $self->{bindings}{$key} = $cb;
@@ -19,9 +20,10 @@ use DoubleDrive::Dialog::SortDialog;
 {
     package MockFloatBox;
     sub new { bless { floats => [] }, shift }
+
     sub add_float {
         my ($self, %args) = @_;
-        push @{$self->{floats}}, \%args;
+        push @{ $self->{floats} }, \%args;
         return bless { floats => $self->{floats}, record => \%args }, 'MockFloatHandle';
     }
     sub floats { $_[0]->{floats} }
@@ -29,9 +31,10 @@ use DoubleDrive::Dialog::SortDialog;
 
 {
     package MockFloatHandle;
+
     sub remove {
         my ($self) = @_;
-        @{$self->{floats}} = grep { $_ ne $self->{record} } @{$self->{floats}};
+        @{ $self->{floats} } = grep { $_ ne $self->{record} } @{ $self->{floats} };
     }
 }
 
@@ -53,7 +56,7 @@ subtest 'instruction text shows options with selection' => sub {
         key_scope => MockScope->new,
         title => 'Sort',
         message => 'Select sort option',
-        on_execute => sub {},
+        on_execute => sub { },
     );
 
     my $text = $dialog->_instruction_text();
@@ -72,7 +75,7 @@ subtest 'all keys are bound' => sub {
         key_scope => $scope,
         title => 'Sort',
         message => 'Select',
-        on_execute => sub {},
+        on_execute => sub { },
     );
 
     $dialog->show();
@@ -110,7 +113,7 @@ subtest 'j/k navigation moves selection' => sub {
         key_scope => $scope,
         title => 'Sort',
         message => 'Select',
-        on_execute => sub {},
+        on_execute => sub { },
     );
 
     $dialog->show();
@@ -153,16 +156,16 @@ subtest 'Enter executes selected option' => sub {
     );
 
     $dialog->show();
-    is scalar(@{$float_box->floats}), 1, 'float shown';
+    is scalar(@{ $float_box->floats }), 1, 'float shown';
 
     my $bindings = $scope->bindings;
 
     # Move to 'size' and execute
-    $bindings->{j}->();  # name -> size
+    $bindings->{j}->();    # name -> size
     $bindings->{Enter}->();
 
     is $executed_key, 'size', 'executed with size sort_key';
-    is scalar(@{$float_box->floats}), 0, 'float removed after execute';
+    is scalar(@{ $float_box->floats }), 0, 'float removed after execute';
 };
 
 subtest 'direct key selects option immediately' => sub {
@@ -187,7 +190,7 @@ subtest 'direct key selects option immediately' => sub {
     $bindings->{t}->();
 
     is $executed_key, 'mtime', 'direct key t executes with mtime';
-    is scalar(@{$float_box->floats}), 0, 'float removed';
+    is scalar(@{ $float_box->floats }), 0, 'float removed';
 };
 
 subtest 'direct keys are case insensitive' => sub {
@@ -225,7 +228,7 @@ subtest 'Escape cancels' => sub {
         key_scope => $scope,
         title => 'Sort',
         message => 'Select',
-        on_execute => sub {},
+        on_execute => sub { },
         on_cancel => sub { $cancelled++ },
     );
 
@@ -235,7 +238,7 @@ subtest 'Escape cancels' => sub {
     $bindings->{Escape}->();
 
     is $cancelled, 1, 'on_cancel called';
-    is scalar(@{$float_box->floats}), 0, 'float removed';
+    is scalar(@{ $float_box->floats }), 0, 'float removed';
 };
 
 done_testing;

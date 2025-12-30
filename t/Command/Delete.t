@@ -27,7 +27,7 @@ subtest 'no files to operate - returns immediately' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $pane,
         opposite_pane => mock_pane(),
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub { $confirm_called++; Future->done },
         on_alert => sub { Future->done },
     );
@@ -53,7 +53,7 @@ subtest 'single file deletion - message and execution' => sub {
             delete_files => sub ($class, $files) {
                 $delete_called++;
                 $deleted_files = $files;
-                return [];  # no failures
+                return [];    # no failures
             },
         ],
     );
@@ -61,7 +61,7 @@ subtest 'single file deletion - message and execution' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $pane,
         opposite_pane => mock_pane(),
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub ($msg, $title) {
             $confirm_message = $msg;
             return Future->done;
@@ -102,7 +102,7 @@ subtest 'multiple files deletion - message format' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $pane,
         opposite_pane => mock_pane(),
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub ($msg, $title) {
             $confirm_message = $msg;
             return Future->done;
@@ -137,7 +137,7 @@ subtest 'user cancels deletion' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $pane,
         opposite_pane => mock_pane(),
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub {
             return Future->fail('cancelled by user');
         },
@@ -172,7 +172,7 @@ subtest 'deletion fails - shows error dialog' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $pane,
         opposite_pane => mock_pane(),
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub { Future->done },
         on_alert => sub ($msg, $title) {
             $alert_message = $msg;
@@ -214,7 +214,7 @@ subtest 'multiple files with partial failure' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $pane,
         opposite_pane => mock_pane(),
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub { Future->done },
         on_alert => sub ($msg, $title) {
             $alert_message = $msg;
@@ -249,7 +249,7 @@ subtest 'unexpected error during deletion' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $pane,
         opposite_pane => mock_pane(),
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub { Future->done },
         on_alert => sub ($msg, $title) {
             $alert_message = $msg;

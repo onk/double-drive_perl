@@ -13,10 +13,10 @@ class DoubleDrive::ArchiveItem :isa(DoubleDrive::BaseListItem) {
     # Represents items inside archives
     # Inherits from BaseListItem for common formatting methods
 
-    field $archive_path :param;            # Real filesystem path to .zip file
-    field $internal_path :param = '';      # Path inside archive (empty for root)
-    field $entry_info :param = undef;      # Hash with {is_dir, size, mtime, basename}
-    field $reader :param = undef;          # Shared Archive::Reader instance (reused to avoid re-reading ZIP file)
+    field $archive_path :param;          # Real filesystem path to .zip file
+    field $internal_path :param = '';    # Path inside archive (empty for root)
+    field $entry_info :param = undef;    # Hash with {is_dir, size, mtime, basename}
+    field $reader :param = undef;        # Shared Archive::Reader instance (reused to avoid re-reading ZIP file)
 
     # Constructor for archive root
     sub new_from_archive ($class, $file_item) {
@@ -31,7 +31,7 @@ class DoubleDrive::ArchiveItem :isa(DoubleDrive::BaseListItem) {
 
     method basename() {
         if (defined $entry_info) {
-            return $entry_info->{basename};  # Already NFC normalized by Archive::Reader
+            return $entry_info->{basename};    # Already NFC normalized by Archive::Reader
         } else {
             # Archive root
             return NFC(decode_utf8($archive_path->basename));
@@ -48,11 +48,11 @@ class DoubleDrive::ArchiveItem :isa(DoubleDrive::BaseListItem) {
     }
 
     method is_dir() {
-        return defined $entry_info ? $entry_info->{is_dir} : true;  # Root is directory
+        return defined $entry_info ? $entry_info->{is_dir} : true;    # Root is directory
     }
 
     method is_archive() {
-        return false;  # Prevents nested archive navigation
+        return false;                                                 # Prevents nested archive navigation
     }
 
     method is_archive_root() {
@@ -65,10 +65,10 @@ class DoubleDrive::ArchiveItem :isa(DoubleDrive::BaseListItem) {
         return [
             map {
                 DoubleDrive::ArchiveItem->new(
-                    archive_path  => $archive_path,
+                    archive_path => $archive_path,
                     internal_path => $_->{path},
-                    entry_info    => $_,
-                    reader        => $reader,
+                    entry_info => $_,
+                    reader => $reader,
                 )
             } @$entries
         ];
@@ -78,9 +78,9 @@ class DoubleDrive::ArchiveItem :isa(DoubleDrive::BaseListItem) {
         return undef unless defined $entry_info;
 
         return DoubleDrive::ArchiveItem::Stat->new(
-            size_value  => $entry_info->{size},
+            size_value => $entry_info->{size},
             mtime_value => $entry_info->{mtime},
-            mode_value  => $entry_info->{mode},
+            mode_value => $entry_info->{mode},
         );
     }
 
@@ -91,14 +91,14 @@ class DoubleDrive::ArchiveItem :isa(DoubleDrive::BaseListItem) {
         }
 
         # Find parent path by removing last component
-        my $path_parts = [split '/', $internal_path];
-        my $parent_path = join('/', @$path_parts[0..$#$path_parts-1]);
+        my $path_parts = [ split '/', $internal_path ];
+        my $parent_path = join('/', @$path_parts[ 0 .. $#$path_parts - 1 ]);
 
         if ($parent_path eq '') {
             # Parent is archive root
             return DoubleDrive::ArchiveItem->new(
                 archive_path => $archive_path,
-                reader       => $reader,
+                reader => $reader,
             );
         }
 
@@ -106,10 +106,10 @@ class DoubleDrive::ArchiveItem :isa(DoubleDrive::BaseListItem) {
         my $parent_info = $reader->get_entry_info($parent_path);
 
         return DoubleDrive::ArchiveItem->new(
-            archive_path  => $archive_path,
+            archive_path => $archive_path,
             internal_path => $parent_path,
-            entry_info    => $parent_info,
-            reader        => $reader,
+            entry_info => $parent_info,
+            reader => $reader,
         );
     }
 }

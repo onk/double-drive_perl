@@ -14,7 +14,7 @@ subtest 'update_search with empty query' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     my $match_count = $pane->update_search("");
@@ -26,7 +26,7 @@ subtest 'update_search matches files and moves cursor' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     my $match_count = $pane->update_search("ap");
@@ -40,7 +40,7 @@ subtest 'update_search with different queries' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     my $match_count1 = $pane->update_search("ap");
@@ -57,7 +57,7 @@ subtest 'next_match navigates forward with wrapping' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     $pane->update_search('a');
@@ -81,7 +81,7 @@ subtest 'prev_match navigates backward with wrapping' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     $pane->update_search('a');
@@ -105,7 +105,7 @@ subtest 'next_match does nothing with no matches' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     $pane->update_search('z');
@@ -143,7 +143,7 @@ subtest 'clear_search clears is_match flags' => sub {
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
         is_active => 1,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     # Search for 'a' - should match apple and banana
@@ -186,7 +186,7 @@ subtest 'search is case-insensitive' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     my $match_count = $pane->update_search('a');
@@ -199,7 +199,7 @@ subtest 'get_search_status formats correctly' => sub {
 
     my $pane = DoubleDrive::Pane->new(
         path => $dir,
-        on_status_change => sub {}
+        on_status_change => sub { }
     );
 
     # No search

@@ -7,7 +7,7 @@ class DoubleDrive::Dialog::DirectoryJumpDialog :isa(DoubleDrive::Dialog::Base) {
 
     field $directories :param;
     field $on_execute :param;
-    field $on_cancel :param = sub {};
+    field $on_cancel :param = sub { };
     field $selected_index = 0;
 
     method _instruction_text() {

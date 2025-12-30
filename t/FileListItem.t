@@ -107,7 +107,7 @@ subtest 'NFC normalization' => sub {
     my $tempdir = tempdir;
 
     # Create filename in NFD form (as macOS does)
-    my $nfd_filename = NFD('ポ') . '.txt';  # ポ in NFD = U+30DB + U+309A
+    my $nfd_filename = NFD('ポ') . '.txt';    # ポ in NFD = U+30DB + U+309A
     my $file = $tempdir->child($nfd_filename);
     $file->touch;
 
@@ -121,7 +121,7 @@ subtest 'NFC normalization' => sub {
     ok utf8::is_utf8($base), 'internal string';
 
     # basename should be NFC normalized
-    my $expected_nfc = NFC('ポ') . '.txt';  # ポ in NFC = U+30DD
+    my $expected_nfc = NFC('ポ') . '.txt';    # ポ in NFC = U+30DD
     is $base, $expected_nfc, 'NFD -> NFC normalized';
     isnt $base, $nfd_filename, 'not the same as NFD input';
 };

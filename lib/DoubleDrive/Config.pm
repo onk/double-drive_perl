@@ -20,7 +20,7 @@ class DoubleDrive::Config {
         try {
             my $content = $config_file->slurp_utf8;
             $data = decode_json($content);
-        } catch($e) {
+        } catch ($e) {
             return [];
         }
 

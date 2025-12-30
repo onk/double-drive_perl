@@ -21,8 +21,8 @@ subtest 'load registered directories from XDG_CONFIG_HOME' => sub {
         my $payload = {
             registered_directories => [
                 { name => 'home', path => '/home/user', key => 'h' },
-                { name => 'tmp',  path => '/tmp',        key => 't' },
-                { name => 'log',  path => '/var/log',    key => 'l' },
+                { name => 'tmp', path => '/tmp', key => 't' },
+                { name => 'log', path => '/var/log', key => 'l' },
             ],
         };
         $config_file->spew_utf8(encode_json($payload));
@@ -31,9 +31,10 @@ subtest 'load registered directories from XDG_CONFIG_HOME' => sub {
         my $dirs = $config->load_registered_directories();
         is $dirs, [
             { name => 'home', path => '/home/user', key => 'h' },
-            { name => 'tmp',  path => '/tmp',        key => 't' },
-            { name => 'log',  path => '/var/log',    key => 'l' },
-        ], 'registered directories parsed';
+            { name => 'tmp', path => '/tmp', key => 't' },
+            { name => 'log', path => '/var/log', key => 'l' },
+            ],
+            'registered directories parsed';
     };
 };
 

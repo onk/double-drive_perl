@@ -18,7 +18,7 @@ subtest 'status_text returns formatted status' => sub {
         on_status_change => sub { $status_text = shift }
     );
 
-    $pane->set_active(1);  # trigger callback once widgets are initialized
+    $pane->set_active(1);    # trigger callback once widgets are initialized
 
     ok $status_text, 'status text is not empty';
     like $status_text, qr/\[1\/2\]/, 'status contains position info (1 of 2: file1, file2)';
@@ -39,7 +39,7 @@ subtest 'status callback is called on move_cursor' => sub {
         }
     );
 
-    $callback_called = 0;  # Reset after initialization
+    $callback_called = 0;    # Reset after initialization
     $pane->move_cursor(1);
 
     is $callback_called, 1, 'callback called once';
@@ -62,7 +62,7 @@ subtest 'status callback is called on change_directory' => sub {
         }
     );
 
-    $callback_called = 0;  # Reset after initialization
+    $callback_called = 0;    # Reset after initialization
     # Enter subdir (only entry)
     $pane->enter_selected();
 
@@ -121,7 +121,7 @@ subtest 'status_text format is position and name' => sub {
 };
 
 subtest 'status_text is [0/0] for empty directory' => sub {
-    my $dir = temp_dir_with_files();  # empty
+    my $dir = temp_dir_with_files();    # empty
 
     my $status_text;
     my $pane = DoubleDrive::Pane->new(

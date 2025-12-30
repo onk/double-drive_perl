@@ -9,6 +9,7 @@ use DoubleDrive::Dialog::AlertDialog;
 {
     package MockScope;
     sub new { bless { bindings => {} }, shift }
+
     sub bind {
         my ($self, $key, $cb) = @_;
         $self->{bindings}{$key} = $cb;
@@ -19,9 +20,10 @@ use DoubleDrive::Dialog::AlertDialog;
 {
     package MockFloatBox;
     sub new { bless { floats => [] }, shift }
+
     sub add_float {
         my ($self, %args) = @_;
-        push @{$self->{floats}}, \%args;
+        push @{ $self->{floats} }, \%args;
         return bless { floats => $self->{floats}, record => \%args }, 'MockFloatHandle';
     }
     sub floats { $_[0]->{floats} }
@@ -29,9 +31,10 @@ use DoubleDrive::Dialog::AlertDialog;
 
 {
     package MockFloatHandle;
+
     sub remove {
         my ($self) = @_;
-        @{$self->{floats}} = grep { $_ ne $self->{record} } @{$self->{floats}};
+        @{ $self->{floats} } = grep { $_ ne $self->{record} } @{ $self->{floats} };
     }
 }
 
@@ -53,7 +56,7 @@ subtest 'instruction text' => sub {
         key_scope => MockScope->new,
         title => 'Alert',
         message => 'message',
-        on_ack => sub {},
+        on_ack => sub { },
     );
 
     is $dialog->_instruction_text, 'Press Enter or Escape to close', 'shows close instruction';
@@ -68,7 +71,7 @@ subtest 'key bindings registered on show' => sub {
         key_scope => $scope,
         title => 'Alert',
         message => 'message',
-        on_ack => sub {},
+        on_ack => sub { },
     );
 
     $dialog->show();
@@ -115,18 +118,18 @@ subtest 'float added and removed on show/close' => sub {
         key_scope => $scope,
         title => 'Alert',
         message => 'message',
-        on_ack => sub {},
+        on_ack => sub { },
     );
 
-    is scalar(@{$float_box->floats}), 0, 'no float before show';
+    is scalar(@{ $float_box->floats }), 0, 'no float before show';
 
     $dialog->show();
-    is scalar(@{$float_box->floats}), 1, 'float added on show';
+    is scalar(@{ $float_box->floats }), 1, 'float added on show';
 
     # Trigger Enter to close
     my $bindings = $scope->bindings;
     $bindings->{Enter}->();
-    is scalar(@{$float_box->floats}), 0, 'float removed on close';
+    is scalar(@{ $float_box->floats }), 0, 'float removed on close';
 };
 
 done_testing;

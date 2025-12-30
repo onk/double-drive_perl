@@ -16,7 +16,7 @@ class DoubleDrive::Layout {
         );
         my $on_status_change = sub ($text) { $status_bar->set_text($text) };
 
-        my $left_pane  = DoubleDrive::Pane->new(path => $args{left_path},  on_status_change => $on_status_change, is_active => true);
+        my $left_pane = DoubleDrive::Pane->new(path => $args{left_path}, on_status_change => $on_status_change, is_active => true);
         my $right_pane = DoubleDrive::Pane->new(path => $args{right_path}, on_status_change => $on_status_change);
 
         my $float_box = Tickit::Widget::FloatBox->new;
@@ -24,10 +24,10 @@ class DoubleDrive::Layout {
         my $vbox = Tickit::Widget::VBox->new;
         my $hbox = Tickit::Widget::HBox->new(spacing => 1);
 
-        $hbox->add($left_pane->widget,  expand => 1);
+        $hbox->add($left_pane->widget, expand => 1);
         $hbox->add($right_pane->widget, expand => 1);
 
-        $vbox->add($hbox,      expand => 1);
+        $vbox->add($hbox, expand => 1);
         $vbox->add($status_bar);
 
         $float_box->set_base_child($vbox);

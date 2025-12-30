@@ -15,7 +15,7 @@ use DoubleDrive::FileListItem;
     sub new($class, %args) { bless \%args, $class }
     sub set_active($self, $active) { }
     sub after_window_attached($self) { }
-    sub move_cursor($self, $delta) { push @{$self->{move_cursor_calls}}, $delta }
+    sub move_cursor($self, $delta) { push @{ $self->{move_cursor_calls} }, $delta }
     sub current_file($self) { $self->{current_file} }
     sub current_path($self) { $self->{current_path} // Path::Tiny::tempdir() }
     sub files($self) { $self->{files} // [] }
@@ -114,43 +114,43 @@ subtest 'all expected keys are registered' => sub {
 
     is $keys, hash {
         # Navigation
-        field j => D();         # down
-        field k => D();         # up
-        field h => D();         # left pane
-        field l => D();         # right pane
+        field j => D();            # down
+        field k => D();            # up
+        field h => D();            # left pane
+        field l => D();            # right pane
         field Up => D();
         field Down => D();
-        field Tab => D();       # switch pane
-        field g => D();         # top
-        field G => D();         # bottom
-        field Enter => D();     # enter directory
-        field Backspace => D(); # parent directory
+        field Tab => D();          # switch pane
+        field g => D();            # top
+        field G => D();            # bottom
+        field Enter => D();        # enter directory
+        field Backspace => D();    # parent directory
 
         # Selection
-        field ' ' => D();       # toggle selection
-        field a => D();         # select all
+        field ' ' => D();          # toggle selection
+        field a => D();            # select all
 
         # Search
-        field '/' => D();       # search
-        field '*' => D();       # filter
-        field n => D();         # next match
-        field N => D();         # prev match
-        field Escape => D();    # clear search and filter
+        field '/' => D();          # search
+        field '*' => D();          # filter
+        field n => D();            # next match
+        field N => D();            # prev match
+        field Escape => D();       # clear search and filter
 
         # Commands
-        field c => D();         # copy
-        field d => D();         # delete
-        field m => D();         # move
-        field e => D();         # open editor
-        field K => D();         # mkdir
-        field r => D();         # rename
-        field v => D();         # view file
-        field x => D();         # open tmux window
+        field c => D();            # copy
+        field d => D();            # delete
+        field m => D();            # move
+        field e => D();            # open editor
+        field K => D();            # mkdir
+        field r => D();            # rename
+        field v => D();            # view file
+        field x => D();            # open tmux window
 
         # Other
-        field s => D();         # sort
-        field L => D();         # jump to registered directory
-        field q => D();         # quit
+        field s => D();            # sort
+        field L => D();            # jump to registered directory
+        field q => D();            # quit
 
         end();
     }, 'all expected keys are registered';
@@ -176,7 +176,7 @@ subtest 'hjkl navigation bindings work correctly' => sub {
 
     # k should move cursor up on active pane
     $keys->{k}->();
-    is $left_pane->{move_cursor_calls}, [1, -1], 'k moves left pane cursor up';
+    is $left_pane->{move_cursor_calls}, [ 1, -1 ], 'k moves left pane cursor up';
 
     # l should switch to right pane when left is active
     $keys->{l}->();
@@ -197,7 +197,7 @@ subtest 'arrow key navigation' => sub {
     is $left_pane->{move_cursor_calls}, [1], 'Down moves cursor';
 
     $keys->{Up}->();
-    is $left_pane->{move_cursor_calls}, [1, -1], 'Up moves cursor';
+    is $left_pane->{move_cursor_calls}, [ 1, -1 ], 'Up moves cursor';
 };
 
 subtest 'Tab switches panes' => sub {

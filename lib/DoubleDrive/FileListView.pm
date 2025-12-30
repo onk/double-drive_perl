@@ -4,8 +4,8 @@ use utf8;
 use parent 'Tickit::Widget::Static';
 
 use Tickit::Pen;
-use constant HIGHLIGHT_PEN        => Tickit::Pen->new(fg => "hi-yellow");
-use constant CURSOR_PEN           => Tickit::Pen->new(bg => "blue", fg => "white");
+use constant HIGHLIGHT_PEN => Tickit::Pen->new(fg => "hi-yellow");
+use constant CURSOR_PEN => Tickit::Pen->new(bg => "blue", fg => "white");
 use constant CURSOR_HIGHLIGHT_PEN => Tickit::Pen->new(bg => "blue", fg => "hi-yellow");
 
 # Request minimal width - this allows HBox to distribute width evenly
@@ -21,7 +21,7 @@ sub new ($class, @args) {
 # Row shape: { item => FileListItem, is_cursor => Bool }
 sub set_rows ($self, $rows) {
     my $window = $self->window;
-    my $cols   = $window ? $window->cols : undef;
+    my $cols = $window ? $window->cols : undef;
 
     my $lines = $self->_rows_to_lines($rows, $cols);
 
@@ -33,15 +33,16 @@ sub set_rows ($self, $rows) {
 sub _rows_to_lines ($self, $rows, $cols) {
 
     $rows //= [];
-    return [{ text => "(empty directory)" }] unless @$rows;
+    return [ { text => "(empty directory)" } ] unless @$rows;
 
     my $max_name_width = defined $cols ? $self->_max_name_width($cols) : 10;
-    my $lines          = [];
+    my $lines = [];
 
     for my $row (@$rows) {
         my $item = $row->{item};
 
-        my $selector = $item->is_selected
+        my $selector =
+            $item->is_selected
             ? ($row->{is_cursor} ? ">*" : " *")
             : ($row->{is_cursor} ? "> " : "  ");
 
@@ -57,10 +58,11 @@ sub _rows_to_lines ($self, $rows, $cols) {
             $text = $selector . $formatted_name;
         }
 
-        my $pen = $row->{is_cursor} && $item->is_match ? CURSOR_HIGHLIGHT_PEN
-                : $row->{is_cursor}                    ? CURSOR_PEN
-                : $item->is_match                      ? HIGHLIGHT_PEN
-                :                                        undef;
+        my $pen =
+              $row->{is_cursor} && $item->is_match ? CURSOR_HIGHLIGHT_PEN
+            : $row->{is_cursor} ? CURSOR_PEN
+            : $item->is_match ? HIGHLIGHT_PEN
+            : undef;
         push @$lines, { text => $text, pen => $pen };
     }
 

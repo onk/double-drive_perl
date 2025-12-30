@@ -9,6 +9,7 @@ use DoubleDrive::Dialog::DirectoryJumpDialog;
 {
     package MockScope;
     sub new { bless { bindings => {} }, shift }
+
     sub bind {
         my ($self, $key, $cb) = @_;
         $self->{bindings}{$key} = $cb;
@@ -19,9 +20,10 @@ use DoubleDrive::Dialog::DirectoryJumpDialog;
 {
     package MockFloatBox;
     sub new { bless { floats => [] }, shift }
+
     sub add_float {
         my ($self, %args) = @_;
-        push @{$self->{floats}}, \%args;
+        push @{ $self->{floats} }, \%args;
         return bless { floats => $self->{floats}, record => \%args }, 'MockFloatHandle';
     }
     sub floats { $_[0]->{floats} }
@@ -29,9 +31,10 @@ use DoubleDrive::Dialog::DirectoryJumpDialog;
 
 {
     package MockFloatHandle;
+
     sub remove {
         my ($self) = @_;
-        @{$self->{floats}} = grep { $_ ne $self->{record} } @{$self->{floats}};
+        @{ $self->{floats} } = grep { $_ ne $self->{record} } @{ $self->{floats} };
     }
 }
 
@@ -48,7 +51,7 @@ use DoubleDrive::Dialog::DirectoryJumpDialog;
 
 subtest 'instruction text shows directories with selection' => sub {
     my $directories = [
-        { key => '1', name => 'Home',     path => '/home/user' },
+        { key => '1', name => 'Home', path => '/home/user' },
         { key => '2', name => 'Projects', path => '/home/user/projects' },
         { key => '3', name => 'Documents', path => '/home/user/docs' },
     ];
@@ -60,7 +63,7 @@ subtest 'instruction text shows directories with selection' => sub {
         title => 'Jump to Directory',
         message => 'Select directory',
         directories => $directories,
-        on_execute => sub {},
+        on_execute => sub { },
     );
 
     my $text = $dialog->_instruction_text();
@@ -83,7 +86,7 @@ subtest 'navigation keys are bound' => sub {
         title => 'Jump',
         message => 'Select',
         directories => $directories,
-        on_execute => sub {},
+        on_execute => sub { },
     );
 
     $dialog->show();
@@ -96,8 +99,8 @@ subtest 'navigation keys are bound' => sub {
         field Up => D();
         field Enter => D();
         field Escape => D();
-        field '1' => D();  # direct key
-        field '2' => D();  # direct key
+        field '1' => D();    # direct key
+        field '2' => D();    # direct key
         end();
     }, 'all expected keys bound';
 };
@@ -105,9 +108,9 @@ subtest 'navigation keys are bound' => sub {
 subtest 'j/k navigation moves selection' => sub {
     my $scope = MockScope->new;
     my $directories = [
-        { key => '1', name => 'First',  path => '/first' },
+        { key => '1', name => 'First', path => '/first' },
         { key => '2', name => 'Second', path => '/second' },
-        { key => '3', name => 'Third',  path => '/third' },
+        { key => '3', name => 'Third', path => '/third' },
     ];
 
     my $dialog = DoubleDrive::Dialog::DirectoryJumpDialog->new(
@@ -117,7 +120,7 @@ subtest 'j/k navigation moves selection' => sub {
         title => 'Jump',
         message => 'Select',
         directories => $directories,
-        on_execute => sub {},
+        on_execute => sub { },
     );
 
     $dialog->show();
@@ -150,7 +153,7 @@ subtest 'Enter executes selected directory' => sub {
     my $executed_path;
 
     my $directories = [
-        { key => '1', name => 'First',  path => '/first' },
+        { key => '1', name => 'First', path => '/first' },
         { key => '2', name => 'Second', path => '/second' },
     ];
 
@@ -165,7 +168,7 @@ subtest 'Enter executes selected directory' => sub {
     );
 
     $dialog->show();
-    is scalar(@{$float_box->floats}), 1, 'float shown';
+    is scalar(@{ $float_box->floats }), 1, 'float shown';
 
     my $bindings = $scope->bindings;
 
@@ -174,7 +177,7 @@ subtest 'Enter executes selected directory' => sub {
     $bindings->{Enter}->();
 
     is $executed_path, '/second', 'executed with second directory path';
-    is scalar(@{$float_box->floats}), 0, 'float removed after execute';
+    is scalar(@{ $float_box->floats }), 0, 'float removed after execute';
 };
 
 subtest 'direct key selects and executes immediately' => sub {
@@ -183,9 +186,9 @@ subtest 'direct key selects and executes immediately' => sub {
     my $executed_path;
 
     my $directories = [
-        { key => '1', name => 'First',  path => '/first' },
+        { key => '1', name => 'First', path => '/first' },
         { key => '2', name => 'Second', path => '/second' },
-        { key => '3', name => 'Third',  path => '/third' },
+        { key => '3', name => 'Third', path => '/third' },
     ];
 
     my $dialog = DoubleDrive::Dialog::DirectoryJumpDialog->new(
@@ -206,7 +209,7 @@ subtest 'direct key selects and executes immediately' => sub {
     $bindings->{'3'}->();
 
     is $executed_path, '/third', 'direct key executes immediately';
-    is scalar(@{$float_box->floats}), 0, 'float removed';
+    is scalar(@{ $float_box->floats }), 0, 'float removed';
 };
 
 subtest 'Escape cancels' => sub {
@@ -225,7 +228,7 @@ subtest 'Escape cancels' => sub {
         title => 'Jump',
         message => 'Select',
         directories => $directories,
-        on_execute => sub {},
+        on_execute => sub { },
         on_cancel => sub { $cancelled++ },
     );
 
@@ -235,7 +238,7 @@ subtest 'Escape cancels' => sub {
     $bindings->{Escape}->();
 
     is $cancelled, 1, 'on_cancel called';
-    is scalar(@{$float_box->floats}), 0, 'float removed';
+    is scalar(@{ $float_box->floats }), 0, 'float removed';
 };
 
 done_testing;

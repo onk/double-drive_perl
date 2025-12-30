@@ -27,7 +27,7 @@ subtest 'no files to operate - returns immediately' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $pane,
         opposite_pane => mock_pane(),
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub { $confirm_called++; Future->done },
         on_alert => sub { Future->done },
     );
@@ -89,7 +89,7 @@ subtest 'copy into self - guard check' => sub {
     my $file_manipulator_mock = mock 'DoubleDrive::FileManipulator' => (
         override => [
             copy_into_self => sub ($class, $files, $dest) {
-                return 1;  # true - copying into self
+                return 1;    # true - copying into self
             },
             copy_files => sub {
                 $copy_called++;
@@ -130,16 +130,16 @@ subtest 'single file copy without overwrite' => sub {
     my $file_manipulator_mock = mock 'DoubleDrive::FileManipulator' => (
         override => [
             copy_into_self => sub {
-                return 0;  # not copying into self
+                return 0;    # not copying into self
             },
             overwrite_targets => sub ($class, $files, $dest) {
-                return [];  # no existing files
+                return [];    # no existing files
             },
             copy_files => sub ($class, $files, $dest) {
                 $copy_called++;
                 $copied_files = $files;
                 $dest_path = $dest;
-                return [];  # no failures
+                return [];    # no failures
             },
         ],
     );
@@ -147,7 +147,7 @@ subtest 'single file copy without overwrite' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $active_pane,
         opposite_pane => $opposite_pane,
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub {
             $confirm_called++;
             return Future->done;
@@ -178,7 +178,7 @@ subtest 'single file copy with overwrite - confirmation message' => sub {
         override => [
             copy_into_self => sub { return 0 },
             overwrite_targets => sub {
-                return ['test.txt'];  # file exists
+                return ['test.txt'];    # file exists
             },
             copy_files => sub {
                 $copy_called++;
@@ -190,7 +190,7 @@ subtest 'single file copy with overwrite - confirmation message' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $active_pane,
         opposite_pane => $opposite_pane,
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub ($msg, $title) {
             $confirm_message = $msg;
             return Future->done;
@@ -222,7 +222,7 @@ subtest 'multiple files copy with partial overwrite' => sub {
         override => [
             copy_into_self => sub { return 0 },
             overwrite_targets => sub {
-                return ['file1.txt', 'file3.txt'];  # 2 files exist
+                return [ 'file1.txt', 'file3.txt' ];    # 2 files exist
             },
             copy_files => sub {
                 $copy_called++;
@@ -234,7 +234,7 @@ subtest 'multiple files copy with partial overwrite' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $active_pane,
         opposite_pane => $opposite_pane,
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub ($msg, $title) {
             $confirm_message = $msg;
             return Future->done;
@@ -276,7 +276,7 @@ subtest 'user cancels copy' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $active_pane,
         opposite_pane => $opposite_pane,
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub {
             return Future->fail('cancelled by user');
         },
@@ -316,7 +316,7 @@ subtest 'copy fails - shows error dialog' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $active_pane,
         opposite_pane => $opposite_pane,
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub { Future->done },
         on_alert => sub ($msg, $title) {
             $alert_message = $msg;
@@ -363,7 +363,7 @@ subtest 'multiple files with partial failure' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $active_pane,
         opposite_pane => $opposite_pane,
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub { Future->done },
         on_alert => sub ($msg, $title) {
             $alert_message = $msg;
@@ -403,7 +403,7 @@ subtest 'unexpected error during copy' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $active_pane,
         opposite_pane => $opposite_pane,
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub { Future->done },
         on_alert => sub ($msg, $title) {
             $alert_message = $msg;

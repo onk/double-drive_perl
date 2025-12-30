@@ -15,9 +15,11 @@ use DoubleDrive::FileListItem;
 {
     package TestWidget;
     sub new($class, %args) { bless \%args, $class }
+
     sub set_title($self, $title) {
         $self->{title} = $title;
     }
+
     sub set_child($self, $child) {
         $self;
     }
@@ -106,22 +108,22 @@ subtest 'set_sort' => sub {
     my $file_b = $tempdir->child('bbb.md');
     my $file_c = $tempdir->child('ccc.txt');
 
-    $file_a->spew("x" x 100);   # size: 100
-    $file_b->spew("x" x 300);   # size: 300
-    $file_c->spew("x" x 200);   # size: 200
+    $file_a->spew("x" x 100);    # size: 100
+    $file_b->spew("x" x 300);    # size: 300
+    $file_c->spew("x" x 200);    # size: 200
 
     # Mock stat to control mtime without sleep
     my $mtime_overrides = {
-        $file_b->realpath->stringify => 1000,  # oldest
+        $file_b->realpath->stringify => 1000,    # oldest
         $file_a->realpath->stringify => 2000,
-        $file_c->realpath->stringify => 3000,  # newest
+        $file_c->realpath->stringify => 3000,    # newest
     };
 
     my $mock_item = mock 'DoubleDrive::FileListItem' => (
         override => [
             stat => sub ($self) {
                 my $real_stat = $self->path->stat;
-                my $path_str = $self->stringify;  # Use FileListItem's stringify, not Path::Tiny's
+                my $path_str = $self->stringify;    # Use FileListItem's stringify, not Path::Tiny's
                 # diag "stat called for: $path_str";
                 # diag "  exists in overrides: " . (exists $mtime_overrides->{$path_str} ? "yes" : "no");
                 if (exists $mtime_overrides->{$path_str}) {
@@ -129,7 +131,8 @@ subtest 'set_sort' => sub {
                     return bless {
                         size => $real_stat->size,
                         mtime => $mtime_overrides->{$path_str},
-                    }, 'Test::FakeStat';
+                        },
+                        'Test::FakeStat';
                 }
                 return $real_stat;
             },
@@ -183,13 +186,13 @@ subtest 'set_sort' => sub {
         # Select bbb.md (index 1 in name sort)
         $pane->move_cursor(1);
         is $pane->selected_index, 1, 'cursor on index 1 (bbb.md)';
-        is $files->[$pane->selected_index]->basename, 'bbb.md', 'selected file is bbb.md';
+        is $files->[ $pane->selected_index ]->basename, 'bbb.md', 'selected file is bbb.md';
 
         # Sort by size (bbb.md should move to index 0)
         $pane->set_sort('size');
         $files = $pane->files;
         is $pane->selected_index, 0, 'cursor follows bbb.md to index 0';
-        is $files->[$pane->selected_index]->basename, 'bbb.md', 'selected file is still bbb.md';
+        is $files->[ $pane->selected_index ]->basename, 'bbb.md', 'selected file is still bbb.md';
     };
 
     subtest 'no-op when sort key unchanged' => sub {
@@ -201,7 +204,7 @@ subtest 'set_sort' => sub {
         # Try to set to size again
         $pane->set_sort('size');
         is $pane->selected_index, $selected_before, 'cursor position unchanged';
-        is scalar(@{$pane->files}), scalar(@$files), 'files unchanged';
+        is scalar(@{ $pane->files }), scalar(@$files), 'files unchanged';
     };
 };
 
@@ -221,27 +224,28 @@ subtest 'directories sorted before files' => sub {
     my $file_c = $tempdir->child('ccc.txt');
     my $file_e = $tempdir->child('eee.txt');
 
-    $file_a->spew("x" x 300);   # largest file
+    $file_a->spew("x" x 300);    # largest file
     $file_c->spew("x" x 200);
-    $file_e->spew("x" x 100);   # smallest file
+    $file_e->spew("x" x 100);    # smallest file
 
     # Mock stat to control mtime without sleep
     my $mtime_overrides = {
-        $file_c->realpath->stringify => 1000,  # oldest file
+        $file_c->realpath->stringify => 1000,    # oldest file
         $file_a->realpath->stringify => 2000,
-        $file_e->realpath->stringify => 3000,  # newest file
+        $file_e->realpath->stringify => 3000,    # newest file
     };
 
     my $mock_item = mock 'DoubleDrive::FileListItem' => (
         override => [
             stat => sub ($self) {
                 my $real_stat = $self->path->stat;
-                my $path_str = $self->stringify;  # Use FileListItem's stringify, not Path::Tiny's
+                my $path_str = $self->stringify;    # Use FileListItem's stringify, not Path::Tiny's
                 if (exists $mtime_overrides->{$path_str}) {
                     return bless {
                         size => $real_stat->size,
                         mtime => $mtime_overrides->{$path_str},
-                    }, 'Test::FakeStat';
+                        },
+                        'Test::FakeStat';
                 }
                 return $real_stat;
             },

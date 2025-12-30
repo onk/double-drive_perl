@@ -43,9 +43,13 @@ sub create_test_zip {
 subtest 'new_from_archive' => sub {
     subtest 'creates archive item from valid ZIP' => sub {
         my $tempdir = tempdir;
-        my $zip_path = create_test_zip($tempdir, 'test.zip', [
-            { type => 'file', path => 'file.txt', content => 'test' },
-        ]);
+        my $zip_path = create_test_zip(
+            $tempdir,
+            'test.zip',
+            [
+                { type => 'file', path => 'file.txt', content => 'test' },
+            ]
+        );
 
         my $file_item = DoubleDrive::FileListItem->new(path => $zip_path);
         my $archive_item = DoubleDrive::ArchiveItem->new_from_archive($file_item);
@@ -81,9 +85,13 @@ subtest 'new_from_archive' => sub {
 
 subtest 'archive root' => sub {
     my $tempdir = tempdir;
-    my $zip_path = create_test_zip($tempdir, 'test.zip', [
-        { type => 'file', path => 'file.txt', content => 'test' },
-    ]);
+    my $zip_path = create_test_zip(
+        $tempdir,
+        'test.zip',
+        [
+            { type => 'file', path => 'file.txt', content => 'test' },
+        ]
+    );
 
     my $file_item = DoubleDrive::FileListItem->new(path => $zip_path);
     my $archive_root = DoubleDrive::ArchiveItem->new_from_archive($file_item);
@@ -99,11 +107,15 @@ subtest 'archive root' => sub {
 subtest 'children' => sub {
     subtest 'lists root entries' => sub {
         my $tempdir = tempdir;
-        my $zip_path = create_test_zip($tempdir, 'test.zip', [
-            { type => 'file', path => 'file1.txt', content => 'test1' },
-            { type => 'file', path => 'file2.txt', content => 'test2' },
-            { type => 'dir', path => 'subdir/' },
-        ]);
+        my $zip_path = create_test_zip(
+            $tempdir,
+            'test.zip',
+            [
+                { type => 'file', path => 'file1.txt', content => 'test1' },
+                { type => 'file', path => 'file2.txt', content => 'test2' },
+                { type => 'dir', path => 'subdir/' },
+            ]
+        );
 
         my $file_item = DoubleDrive::FileListItem->new(path => $zip_path);
         my $archive_root = DoubleDrive::ArchiveItem->new_from_archive($file_item);
@@ -111,16 +123,20 @@ subtest 'children' => sub {
 
         is scalar(@$children), 3, 'has three children';
 
-        my $names = [sort map { $_->basename } @$children];
-        is $names, ['file1.txt', 'file2.txt', 'subdir'], 'correct file names';
+        my $names = [ sort map { $_->basename } @$children ];
+        is $names, [ 'file1.txt', 'file2.txt', 'subdir' ], 'correct file names';
     };
 
     subtest 'lists nested entries' => sub {
         my $tempdir = tempdir;
-        my $zip_path = create_test_zip($tempdir, 'test.zip', [
-            { type => 'file', path => 'dir/file.txt', content => 'nested' },
-            { type => 'file', path => 'dir/subdir/deep.txt', content => 'deep' },
-        ]);
+        my $zip_path = create_test_zip(
+            $tempdir,
+            'test.zip',
+            [
+                { type => 'file', path => 'dir/file.txt', content => 'nested' },
+                { type => 'file', path => 'dir/subdir/deep.txt', content => 'deep' },
+            ]
+        );
 
         my $file_item = DoubleDrive::FileListItem->new(path => $zip_path);
         my $archive_root = DoubleDrive::ArchiveItem->new_from_archive($file_item);
@@ -135,11 +151,15 @@ subtest 'children' => sub {
 
 subtest 'entry info' => sub {
     my $tempdir = tempdir;
-    my $mtime = 1_609_459_200;  # 2021-01-01
-    my $zip_path = create_test_zip($tempdir, 'test.zip', [
-        { type => 'file', path => 'test.txt', content => 'hello world', mtime => $mtime },
-        { type => 'dir', path => 'testdir/', mtime => $mtime },
-    ]);
+    my $mtime = 1_609_459_200;    # 2021-01-01
+    my $zip_path = create_test_zip(
+        $tempdir,
+        'test.zip',
+        [
+            { type => 'file', path => 'test.txt', content => 'hello world', mtime => $mtime },
+            { type => 'dir', path => 'testdir/', mtime => $mtime },
+        ]
+    );
 
     my $file_item = DoubleDrive::FileListItem->new(path => $zip_path);
     my $archive_root = DoubleDrive::ArchiveItem->new_from_archive($file_item);
@@ -176,9 +196,13 @@ subtest 'entry info' => sub {
 subtest 'parent navigation' => sub {
     subtest 'root parent goes to filesystem' => sub {
         my $tempdir = tempdir;
-        my $zip_path = create_test_zip($tempdir, 'test.zip', [
-            { type => 'file', path => 'file.txt', content => 'test' },
-        ]);
+        my $zip_path = create_test_zip(
+            $tempdir,
+            'test.zip',
+            [
+                { type => 'file', path => 'file.txt', content => 'test' },
+            ]
+        );
 
         my $file_item = DoubleDrive::FileListItem->new(path => $zip_path);
         my $archive_root = DoubleDrive::ArchiveItem->new_from_archive($file_item);
@@ -191,9 +215,13 @@ subtest 'parent navigation' => sub {
 
     subtest 'entry parent is archive root' => sub {
         my $tempdir = tempdir;
-        my $zip_path = create_test_zip($tempdir, 'test.zip', [
-            { type => 'file', path => 'file.txt', content => 'test' },
-        ]);
+        my $zip_path = create_test_zip(
+            $tempdir,
+            'test.zip',
+            [
+                { type => 'file', path => 'file.txt', content => 'test' },
+            ]
+        );
 
         my $file_item = DoubleDrive::FileListItem->new(path => $zip_path);
         my $archive_root = DoubleDrive::ArchiveItem->new_from_archive($file_item);
@@ -208,9 +236,13 @@ subtest 'parent navigation' => sub {
 
     subtest 'nested entry parent is intermediate directory' => sub {
         my $tempdir = tempdir;
-        my $zip_path = create_test_zip($tempdir, 'test.zip', [
-            { type => 'file', path => 'dir/subdir/file.txt', content => 'nested' },
-        ]);
+        my $zip_path = create_test_zip(
+            $tempdir,
+            'test.zip',
+            [
+                { type => 'file', path => 'dir/subdir/file.txt', content => 'nested' },
+            ]
+        );
 
         my $file_item = DoubleDrive::FileListItem->new(path => $zip_path);
         my $archive_root = DoubleDrive::ArchiveItem->new_from_archive($file_item);
@@ -258,12 +290,16 @@ subtest 'UTF-8 handling' => sub {
 
 subtest 'extname (inherited)' => sub {
     my $tempdir = tempdir;
-    my $zip_path = create_test_zip($tempdir, 'test.zip', [
-        { type => 'file', path => 'document.txt', content => 'test' },
-        { type => 'file', path => 'archive.tar.gz', content => 'test' },
-        { type => 'file', path => 'README', content => 'test' },
-        { type => 'dir', path => 'testdir/' },
-    ]);
+    my $zip_path = create_test_zip(
+        $tempdir,
+        'test.zip',
+        [
+            { type => 'file', path => 'document.txt', content => 'test' },
+            { type => 'file', path => 'archive.tar.gz', content => 'test' },
+            { type => 'file', path => 'README', content => 'test' },
+            { type => 'dir', path => 'testdir/' },
+        ]
+    );
 
     my $file_item = DoubleDrive::FileListItem->new(path => $zip_path);
     my $archive_root = DoubleDrive::ArchiveItem->new_from_archive($file_item);
@@ -279,10 +315,14 @@ subtest 'extname (inherited)' => sub {
 
 subtest 'format methods (inherited)' => sub_at {
     my $tempdir = tempdir;
-    my $mtime = 1_736_937_000;  # 2025-01-15 10:30:00
-    my $zip_path = create_test_zip($tempdir, 'test.zip', [
-        { type => 'file', path => 'test.txt', content => 'x' x 2048, mtime => $mtime },
-    ]);
+    my $mtime = 1_736_937_000;    # 2025-01-15 10:30:00
+    my $zip_path = create_test_zip(
+        $tempdir,
+        'test.zip',
+        [
+            { type => 'file', path => 'test.txt', content => 'x' x 2048, mtime => $mtime },
+        ]
+    );
 
     my $file_item = DoubleDrive::FileListItem->new(path => $zip_path);
     my $archive_root = DoubleDrive::ArchiveItem->new_from_archive($file_item);
@@ -301,13 +341,18 @@ subtest 'format methods (inherited)' => sub_at {
         is $file_entry->format_name(10), 'test.txt  ', 'pads short name';
         is $file_entry->format_name(5), 'te...', 'truncates long name';
     };
-} '2025-01-15T10:30:00Z';
+}
+'2025-01-15T10:30:00Z';
 
 subtest 'deep directory navigation' => sub {
     my $tempdir = tempdir;
-    my $zip_path = create_test_zip($tempdir, 'test.zip', [
-        { type => 'file', path => 'a/b/c/d/deep.txt', content => 'very deep' },
-    ]);
+    my $zip_path = create_test_zip(
+        $tempdir,
+        'test.zip',
+        [
+            { type => 'file', path => 'a/b/c/d/deep.txt', content => 'very deep' },
+        ]
+    );
 
     my $file_item = DoubleDrive::FileListItem->new(path => $zip_path);
     my $current = DoubleDrive::ArchiveItem->new_from_archive($file_item);

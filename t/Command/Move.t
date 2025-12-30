@@ -27,7 +27,7 @@ subtest 'no files to operate - returns immediately' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $pane,
         opposite_pane => mock_pane(),
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub { $confirm_called++; Future->done },
         on_alert => sub { Future->done },
     );
@@ -89,7 +89,7 @@ subtest 'move into self - guard check' => sub {
     my $file_manipulator_mock = mock 'DoubleDrive::FileManipulator' => (
         override => [
             copy_into_self => sub ($class, $files, $dest) {
-                return 1;  # true - moving into self
+                return 1;    # true - moving into self
             },
             move_files => sub {
                 $move_called++;
@@ -130,16 +130,16 @@ subtest 'single file move without overwrite' => sub {
     my $file_manipulator_mock = mock 'DoubleDrive::FileManipulator' => (
         override => [
             copy_into_self => sub {
-                return 0;  # not moving into self
+                return 0;    # not moving into self
             },
             overwrite_targets => sub ($class, $files, $dest) {
-                return [];  # no existing files
+                return [];    # no existing files
             },
             move_files => sub ($class, $files, $dest) {
                 $move_called++;
                 $moved_files = $files;
                 $dest_path = $dest;
-                return [];  # no failures
+                return [];    # no failures
             },
         ],
     );
@@ -147,7 +147,7 @@ subtest 'single file move without overwrite' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $active_pane,
         opposite_pane => $opposite_pane,
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub {
             $confirm_called++;
             return Future->done;
@@ -179,7 +179,7 @@ subtest 'single file move with overwrite - confirmation message' => sub {
         override => [
             copy_into_self => sub { return 0 },
             overwrite_targets => sub {
-                return ['test.txt'];  # file exists
+                return ['test.txt'];    # file exists
             },
             move_files => sub {
                 $move_called++;
@@ -191,7 +191,7 @@ subtest 'single file move with overwrite - confirmation message' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $active_pane,
         opposite_pane => $opposite_pane,
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub ($msg, $title) {
             $confirm_message = $msg;
             return Future->done;
@@ -224,7 +224,7 @@ subtest 'multiple files move with partial overwrite' => sub {
         override => [
             copy_into_self => sub { return 0 },
             overwrite_targets => sub {
-                return ['file1.txt', 'file3.txt'];  # 2 files exist
+                return [ 'file1.txt', 'file3.txt' ];    # 2 files exist
             },
             move_files => sub {
                 $move_called++;
@@ -236,7 +236,7 @@ subtest 'multiple files move with partial overwrite' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $active_pane,
         opposite_pane => $opposite_pane,
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub ($msg, $title) {
             $confirm_message = $msg;
             return Future->done;
@@ -279,7 +279,7 @@ subtest 'user cancels move' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $active_pane,
         opposite_pane => $opposite_pane,
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub {
             return Future->fail('cancelled by user');
         },
@@ -320,7 +320,7 @@ subtest 'move fails - shows error dialog' => sub {
     my $context = DoubleDrive::CommandContext->new(
         active_pane => $active_pane,
         opposite_pane => $opposite_pane,
-        on_status_change => sub {},
+        on_status_change => sub { },
         on_confirm => sub { Future->done },
         on_alert => sub ($msg, $title) {
             $alert_message = $msg;

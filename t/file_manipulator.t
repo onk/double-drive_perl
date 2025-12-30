@@ -30,10 +30,10 @@ subtest 'copy_files copies files and directories' => sub {
 };
 
 subtest 'overwrite_targets detects existing files and symlinks' => sub {
-    my $src_dir  = temp_dir_with_files('file1', 'file2', 'broken');
+    my $src_dir = temp_dir_with_files('file1', 'file2', 'broken');
     my $dest_dir = temp_dir_with_files('file1');
 
-    symlink 'no_target', path($dest_dir, 'broken')->stringify;  # broken link in dest
+    symlink 'no_target', path($dest_dir, 'broken')->stringify;    # broken link in dest
 
     my $existing = DoubleDrive::FileManipulator->overwrite_targets(
         [

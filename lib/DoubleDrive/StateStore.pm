@@ -20,7 +20,7 @@ class DoubleDrive::StateStore {
         try {
             my $content = $state_file->slurp_utf8;
             $data = decode_json($content);
-        } catch($e) {
+        } catch ($e) {
             return {};
         }
         return {} unless ref $data eq 'HASH';

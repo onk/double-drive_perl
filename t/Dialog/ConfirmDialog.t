@@ -9,6 +9,7 @@ use DoubleDrive::Dialog::ConfirmDialog;
 {
     package MockScope;
     sub new { bless { bindings => {} }, shift }
+
     sub bind {
         my ($self, $key, $cb) = @_;
         $self->{bindings}{$key} = $cb;
@@ -19,9 +20,10 @@ use DoubleDrive::Dialog::ConfirmDialog;
 {
     package MockFloatBox;
     sub new { bless { floats => [] }, shift }
+
     sub add_float {
         my ($self, %args) = @_;
-        push @{$self->{floats}}, \%args;
+        push @{ $self->{floats} }, \%args;
         return bless { floats => $self->{floats}, record => \%args }, 'MockFloatHandle';
     }
     sub floats { $_[0]->{floats} }
@@ -29,9 +31,10 @@ use DoubleDrive::Dialog::ConfirmDialog;
 
 {
     package MockFloatHandle;
+
     sub remove {
         my ($self) = @_;
-        @{$self->{floats}} = grep { $_ ne $self->{record} } @{$self->{floats}};
+        @{ $self->{floats} } = grep { $_ ne $self->{record} } @{ $self->{floats} };
     }
 }
 
@@ -53,7 +56,7 @@ subtest 'instruction text toggles with selection' => sub {
         key_scope => MockScope->new,
         title => 'Confirm',
         message => 'message',
-        on_execute => sub {},
+        on_execute => sub { },
     );
 
     is $dialog->_instruction_text, "> [Y]es   [N]o", 'initially highlights yes';
@@ -72,7 +75,7 @@ subtest 'key bindings registered on show' => sub {
         key_scope => $scope,
         title => 'Confirm',
         message => 'message',
-        on_execute => sub {},
+        on_execute => sub { },
     );
 
     $dialog->show();
@@ -109,13 +112,13 @@ subtest 'Direct keys trigger callbacks' => sub {
     my $bindings = $scope->bindings;
 
     $bindings->{y}->();
-    is [$confirm_count, $cancel_count], [1, 0], 'y triggers confirm';
+    is [ $confirm_count, $cancel_count ], [ 1, 0 ], 'y triggers confirm';
 
     $bindings->{n}->();
-    is [$confirm_count, $cancel_count], [1, 1], 'n triggers cancel';
+    is [ $confirm_count, $cancel_count ], [ 1, 1 ], 'n triggers cancel';
 
     $bindings->{Escape}->();
-    is [$confirm_count, $cancel_count], [1, 2], 'Escape triggers cancel';
+    is [ $confirm_count, $cancel_count ], [ 1, 2 ], 'Escape triggers cancel';
 };
 
 subtest 'Enter executes selected option' => sub {
@@ -138,17 +141,17 @@ subtest 'Enter executes selected option' => sub {
 
     # Enter on yes (default)
     $bindings->{Enter}->();
-    is [$confirm_count, $cancel_count], [1, 0], 'Enter executes confirm when yes selected';
+    is [ $confirm_count, $cancel_count ], [ 1, 0 ], 'Enter executes confirm when yes selected';
 
     # Toggle to no, then Enter
     $bindings->{Tab}->();
     $bindings->{Enter}->();
-    is [$confirm_count, $cancel_count], [1, 1], 'Enter executes cancel when no selected';
+    is [ $confirm_count, $cancel_count ], [ 1, 1 ], 'Enter executes cancel when no selected';
 
     # Toggle back to yes, then Enter
     $bindings->{Tab}->();
     $bindings->{Enter}->();
-    is [$confirm_count, $cancel_count], [2, 1], 'Enter executes confirm after toggle back';
+    is [ $confirm_count, $cancel_count ], [ 2, 1 ], 'Enter executes confirm after toggle back';
 };
 
 subtest 'on_cancel defaults to no-op when omitted' => sub {
@@ -160,7 +163,7 @@ subtest 'on_cancel defaults to no-op when omitted' => sub {
         key_scope => $scope,
         title => 'Confirm',
         message => 'message',
-        on_execute => sub {},
+        on_execute => sub { },
     );
 
     $dialog->show();
@@ -181,18 +184,18 @@ subtest 'float added and removed on show/close' => sub {
         key_scope => $scope,
         title => 'Confirm',
         message => 'message',
-        on_execute => sub {},
+        on_execute => sub { },
     );
 
-    is scalar(@{$float_box->floats}), 0, 'no float before show';
+    is scalar(@{ $float_box->floats }), 0, 'no float before show';
 
     $dialog->show();
-    is scalar(@{$float_box->floats}), 1, 'float added on show';
+    is scalar(@{ $float_box->floats }), 1, 'float added on show';
 
     # Trigger y to close
     my $bindings = $scope->bindings;
     $bindings->{y}->();
-    is scalar(@{$float_box->floats}), 0, 'float removed on close';
+    is scalar(@{ $float_box->floats }), 0, 'float removed on close';
 };
 
 done_testing;
