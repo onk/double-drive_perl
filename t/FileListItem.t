@@ -86,6 +86,28 @@ subtest 'is_archive' => sub {
         my $item = DoubleDrive::FileListItem->new(path => $dir);
         ok !$item->is_archive, 'directory named .zip is not archive';
     };
+
+    subtest 'detects tar.gz and tgz files' => sub {
+        my $tar_gz_file = $tempdir->child('archive.tar.gz');
+        $tar_gz_file->touch;
+        my $item1 = DoubleDrive::FileListItem->new(path => $tar_gz_file);
+        ok $item1->is_archive, 'detects .tar.gz file as archive';
+
+        my $tgz_file = $tempdir->child('archive.tgz');
+        $tgz_file->touch;
+        my $item2 = DoubleDrive::FileListItem->new(path => $tgz_file);
+        ok $item2->is_archive, 'detects .tgz file as archive';
+
+        my $tar_gz_upper = $tempdir->child('ARCHIVE.TAR.GZ');
+        $tar_gz_upper->touch;
+        my $item3 = DoubleDrive::FileListItem->new(path => $tar_gz_upper);
+        ok $item3->is_archive, 'detects .TAR.GZ file as archive (case insensitive)';
+
+        my $tgz_upper = $tempdir->child('ARCHIVE.TGZ');
+        $tgz_upper->touch;
+        my $item4 = DoubleDrive::FileListItem->new(path => $tgz_upper);
+        ok $item4->is_archive, 'detects .TGZ file as archive (case insensitive)';
+    };
 };
 
 subtest 'basename and stringify' => sub {

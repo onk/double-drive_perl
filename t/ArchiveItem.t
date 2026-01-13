@@ -7,6 +7,7 @@ use lib 't/lib';
 use DoubleDrive::Test::Time qw(sub_at);
 use Path::Tiny qw(path tempdir);
 use Archive::Zip qw(:ERROR_CODES :CONSTANTS);
+use Archive::Tar;
 
 use lib 'lib';
 use DoubleDrive::ArchiveItem;
@@ -38,6 +39,52 @@ sub create_test_zip {
     die "Failed to write ZIP" unless $zip->writeToFileNamed($zip_path->stringify) == AZ_OK;
 
     return $zip_path;
+}
+
+# Helper function to create a test tar.gz file
+sub create_test_tar_gz {
+    my ($tempdir, $filename, $entries) = @_;
+
+    # Create a temporary directory structure for tar creation
+    my $temp_root = $tempdir->child('.tar_build');
+    $temp_root->mkpath;
+
+    for my $entry (@$entries) {
+        my $full_path = $temp_root->child($entry->{path});
+
+        if ($entry->{type} eq 'file') {
+            $full_path->parent->mkpath;
+            $full_path->spew_raw($entry->{content} // '');
+            if (defined $entry->{mtime}) {
+                utime($entry->{mtime}, $entry->{mtime}, $full_path->stringify);
+            }
+        } elsif ($entry->{type} eq 'dir') {
+            $full_path->mkpath;
+            if (defined $entry->{mtime}) {
+                utime($entry->{mtime}, $entry->{mtime}, $full_path->stringify);
+            }
+        }
+    }
+
+    # Create tar.gz from the temporary directory
+    my $orig_cwd = Path::Tiny->cwd;
+    chdir($temp_root->stringify) or die "Cannot chdir to $temp_root: $!";
+
+    my $tar = Archive::Tar->new();
+
+    for my $entry (@$entries) {
+        my $path = $entry->{path};
+        if (-e $path) {
+            $tar->add_files($path);
+        }
+    }
+
+    chdir($orig_cwd->stringify) or die "Cannot chdir back to $orig_cwd: $!";
+
+    my $tar_gz_path = $tempdir->child($filename);
+    die "Failed to write tar.gz" unless $tar->write($tar_gz_path->stringify, COMPRESS_GZIP);
+
+    return $tar_gz_path;
 }
 
 subtest 'new_from_archive' => sub {
@@ -375,6 +422,67 @@ subtest 'deep directory navigation' => sub {
     # One more parent() to get from 'a' to archive root
     my $root = $current->parent();
     ok $root->is_archive_root, 'reached archive root';
+};
+
+subtest 'tar.gz integration' => sub {
+    subtest 'basic integration' => sub {
+        my $tempdir = tempdir;
+        my $tar_gz_path = create_test_tar_gz(
+            $tempdir,
+            'test.tar.gz',
+            [
+                { type => 'file', path => 'file1.txt', content => 'test1' },
+                { type => 'dir', path => 'subdir/' },
+            ]
+        );
+
+        my $file_item = DoubleDrive::FileListItem->new(path => $tar_gz_path);
+        my $archive_item = DoubleDrive::ArchiveItem->new_from_archive($file_item);
+
+        ok defined($archive_item), 'archive item created from tar.gz';
+        is $archive_item->basename, 'test.tar.gz', 'basename is tar.gz filename';
+        ok $archive_item->is_archive_root, 'is archive root';
+
+        my $children = $archive_item->children();
+        is scalar(@$children), 2, 'has two children';
+
+        my $names = [ sort map { $_->basename } @$children ];
+        is $names, [ 'file1.txt', 'subdir' ], 'correct child names';
+    };
+
+    subtest 'navigation' => sub {
+        my $tempdir = tempdir;
+        my $tar_gz_path = create_test_tar_gz(
+            $tempdir,
+            'test.tar.gz',
+            [
+                { type => 'file', path => 'dir/nested.txt', content => 'nested file' },
+            ]
+        );
+
+        my $file_item = DoubleDrive::FileListItem->new(path => $tar_gz_path);
+        my $archive_root = DoubleDrive::ArchiveItem->new_from_archive($file_item);
+
+        # Navigate down
+        my $dir = $archive_root->children()->[0];
+        is $dir->basename, 'dir', 'navigated to dir';
+        ok $dir->is_dir, 'dir is directory';
+
+        my $file = $dir->children()->[0];
+        is $file->basename, 'nested.txt', 'navigated to nested.txt';
+        ok !$file->is_dir, 'file is not directory';
+
+        # Navigate up
+        my $parent = $file->parent();
+        is $parent->basename, 'dir', 'parent is dir';
+
+        my $grandparent = $parent->parent();
+        ok $grandparent->is_archive_root, 'grandparent is archive root';
+
+        # Exit archive
+        my $fs_parent = $grandparent->parent();
+        ok $fs_parent isa 'DoubleDrive::FileListItem', 'exited to filesystem';
+    };
 };
 
 done_testing;

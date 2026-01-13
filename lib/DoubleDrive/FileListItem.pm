@@ -21,7 +21,7 @@ class DoubleDrive::FileListItem :isa(DoubleDrive::BaseListItem) {
     method is_archive() {
         return false if $self->is_dir;
         my $name = lc($basename);
-        return $name =~ /\.zip$/;
+        return $name =~ /\.(zip|tar\.gz|tgz)$/;
     }
 
     method stat() {
