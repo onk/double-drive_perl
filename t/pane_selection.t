@@ -1,10 +1,13 @@
 use v5.42;
 use utf8;
 
+# Must be loaded before other modules to override CORE::GLOBAL::time
+use lib 't/lib';
+use DoubleDrive::Test::Time qw(sub_at);
+
 use Test2::V0;
 use Tickit::Test qw(mk_term_and_window);
 use POSIX qw(tzset);
-use lib 't/lib';
 use DoubleDrive::Test::TempDir qw(temp_dir_with_files);
 use DoubleDrive::Test::Mock qw(capture_widget_text mock_file_stat);
 
@@ -18,7 +21,7 @@ BEGIN {
 
 my (undef, $test_window) = mk_term_and_window(lines => 5, cols => 24);
 
-subtest 'toggle_selection marks file and moves cursor down' => sub {
+subtest 'toggle_selection marks file and moves cursor down' => sub_at {
     my $dir = temp_dir_with_files('file1', 'file2', 'file3');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
@@ -36,9 +39,10 @@ subtest 'toggle_selection marks file and moves cursor down' => sub {
     my @lines = split /\n/, $texts->[-1];
     is $lines[0], ' *file1         0.0B  01/15 10:30 -rw-r--r--', 'file1 selected, cursor moved';
     is $lines[1], '> file2         0.0B  01/15 10:30 -rw-r--r--', 'cursor on file2';
-};
+}
+'2025-01-15T10:30:00Z';
 
-subtest 'toggle_selection on cursor shows >* indicator' => sub {
+subtest 'toggle_selection on cursor shows >* indicator' => sub_at {
     my $dir = temp_dir_with_files('file1', 'file2');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
@@ -57,9 +61,10 @@ subtest 'toggle_selection on cursor shows >* indicator' => sub {
 
     my @lines = split /\n/, $texts->[-1];
     is $lines[0], '>*file1         0.0B  01/15 10:30 -rw-r--r--', 'file1 shows >* when selected and cursor';
-};
+}
+'2025-01-15T10:30:00Z';
 
-subtest 'toggle_selection twice deselects file' => sub {
+subtest 'toggle_selection twice deselects file' => sub_at {
     my $dir = temp_dir_with_files('file1', 'file2');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
@@ -80,7 +85,8 @@ subtest 'toggle_selection twice deselects file' => sub {
     my @lines = split /\n/, $texts->[-1];
     is $lines[0], '  file1         0.0B  01/15 10:30 -rw-r--r--', 'file1 deselected';
     is $lines[1], '> file2         0.0B  01/15 10:30 -rw-r--r--', 'cursor moved to file2';
-};
+}
+'2025-01-15T10:30:00Z';
 
 subtest 'get_files_to_operate returns selected files in file list order' => sub {
     my $dir = temp_dir_with_files('file1', 'file2', 'file3');

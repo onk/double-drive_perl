@@ -1,10 +1,13 @@
 use v5.42;
 use utf8;
 
+# Must be loaded before other modules to override CORE::GLOBAL::time
+use lib 't/lib';
+use DoubleDrive::Test::Time qw(sub_at);
+
 use Test2::V0;
 use Tickit::Test qw(mk_term_and_window);
 use POSIX qw(tzset);
-use lib 't/lib';
 use DoubleDrive::Test::TempDir qw(temp_dir_with_files);
 use DoubleDrive::Test::Mock qw(capture_widget_text mock_file_stat);
 
@@ -22,7 +25,7 @@ BEGIN {
 
 my (undef, $test_window) = mk_term_and_window(lines => 5, cols => 24);
 
-subtest 'initial render shows sorted files' => sub {
+subtest 'initial render shows sorted files' => sub_at {
     my $dir = temp_dir_with_files('B', 'a');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
@@ -37,7 +40,8 @@ subtest 'initial render shows sorted files' => sub {
     my @lines = split /\n/, $texts->[-1];
     is $lines[0], '> a             0.0B  01/15 10:30 -rw-r--r--', 'a is first';
     is $lines[1], '  B             0.0B  01/15 10:30 -rw-r--r--', 'B is second';
-};
+}
+'2025-01-15T10:30:00Z';
 
 subtest 'empty directory shows placeholder' => sub {
     my $dir = temp_dir_with_files();    # empty
@@ -51,7 +55,7 @@ subtest 'empty directory shows placeholder' => sub {
     is $texts->[-1], '(empty directory)', 'placeholder text rendered for empty dir';
 };
 
-subtest 'selection moves and stops at bounds' => sub {
+subtest 'selection moves and stops at bounds' => sub_at {
     my $dir = temp_dir_with_files('file', 'file2');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
@@ -70,9 +74,10 @@ subtest 'selection moves and stops at bounds' => sub {
 
     $pane->move_cursor(10);    # out of range
     is scalar(@$texts), 1, 'no extra render when selection would go out of bounds';
-};
+}
+'2025-01-15T10:30:00Z';
 
-subtest 'change_directory to parent reselects previous directory entry' => sub {
+subtest 'change_directory to parent reselects previous directory entry' => sub_at {
     my $dir = temp_dir_with_files('a_dir/file', 'subdir/file');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
@@ -95,9 +100,10 @@ subtest 'change_directory to parent reselects previous directory entry' => sub {
     my @lines = split /\n/, $texts->[-1];
     like $lines[1], qr/^> subdir\/\s+<DIR>\s+01\/15 10:30 drw/, 'parent view selects previous directory';
     is $pane->selected_index, 1, 'cursor on previous directory entry';
-};
+}
+'2025-01-15T10:30:00Z';
 
-subtest 'enter_selected descends into directory and resets selection' => sub {
+subtest 'enter_selected descends into directory and resets selection' => sub_at {
     my $dir = temp_dir_with_files('file_after', 'sub1/ignore', 'sub2/file1', 'sub2/file2');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
@@ -114,9 +120,10 @@ subtest 'enter_selected descends into directory and resets selection' => sub {
     my @lines = split /\n/, $texts->[-1];
     is $lines[0], '> file1         0.0B  01/15 10:30 -rw-r--r--', 'selection reset to first entry in new dir';
     is $lines[1], '  file2         0.0B  01/15 10:30 -rw-r--r--', 'file2 in subdirectory';
-};
+}
+'2025-01-15T10:30:00Z';
 
-subtest 'reload_directory preserves cursor position' => sub {
+subtest 'reload_directory preserves cursor position' => sub_at {
     my $dir = temp_dir_with_files('file1', 'file2', 'file3', 'file4');
     my ($texts, $mock_widget) = capture_widget_text($test_window);
     my $mock_stat = mock_file_stat();
@@ -137,9 +144,10 @@ subtest 'reload_directory preserves cursor position' => sub {
     # Cursor should still be on file3
     my @lines = split /\n/, $texts->[-1];
     is $lines[2], '> file3         0.0B  01/15 10:30 -rw-r--r--', 'cursor preserved on file3 after reload';
-};
+}
+'2025-01-15T10:30:00Z';
 
-subtest 'reload_directory updates index when earlier file is deleted' => sub {
+subtest 'reload_directory updates index when earlier file is deleted' => sub_at {
     use Path::Tiny qw(path);
 
     my $dir = temp_dir_with_files('file1', 'file2', 'file3', 'file4');
@@ -167,9 +175,10 @@ subtest 'reload_directory updates index when earlier file is deleted' => sub {
     is $pane->selected_index, 1, 'cursor index updated to 1 after file1 deleted';
     my @lines = split /\n/, $texts->[-1];
     is $lines[1], '> file3         0.0B  01/15 10:30 -rw-r--r--', 'cursor still on file3 at new index';
-};
+}
+'2025-01-15T10:30:00Z';
 
-subtest 'reload_directory keeps similar position when cursor file is deleted' => sub {
+subtest 'reload_directory keeps similar position when cursor file is deleted' => sub_at {
     use Path::Tiny qw(path);
 
     my $dir = temp_dir_with_files('file1', 'file2', 'file3', 'file4');
@@ -196,6 +205,7 @@ subtest 'reload_directory keeps similar position when cursor file is deleted' =>
     is $pane->selected_index, 2, 'cursor stayed at index 2';
     my @lines = split /\n/, $texts->[-1];
     is $lines[2], '> file4         0.0B  01/15 10:30 -rw-r--r--', 'cursor moved to file4 at same index';
-};
+}
+'2025-01-15T10:30:00Z';
 
 done_testing;
