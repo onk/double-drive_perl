@@ -151,71 +151,38 @@ subtest 'copy_files reports failure and continues' => sub {
     ok -e path($dest_dir, 'file2'), 'other file still copied';
 };
 
-subtest 'delete_files deletes files and collects failures' => sub {
+subtest 'delete_files calls gomi with all paths and returns no failures on success' => sub {
     my $dir = temp_dir_with_files('file1', 'file2');
 
-    my $file1 = path($dir, 'file1');
-    my $mock = mock 'Path::Tiny' => (
-        around => [
-            remove => sub ($orig, $self, @args) {
-                if ($self->stringify eq $file1->stringify) {
-                    die "boom";
-                }
-                return $orig->($self, @args);
-            },
+    my @gomi_args;
+    my $mock = mock 'DoubleDrive::FileManipulator' => (
+        override => [
+            _run_gomi => sub ($class, @paths) { @gomi_args = @paths; return 0 },
         ],
     );
 
-    my $failed = DoubleDrive::FileManipulator->delete_files(
-        [
-            DoubleDrive::FileListItem->new(path => path($dir, 'file1')),
-            DoubleDrive::FileListItem->new(path => path($dir, 'file2')),
-        ],
-    );
+    my $failed = DoubleDrive::FileManipulator->delete_files([
+        DoubleDrive::FileListItem->new(path => path($dir, 'file1')),
+        DoubleDrive::FileListItem->new(path => path($dir, 'file2')),
+    ]);
 
-    is $failed, [ { file => 'file1', error => match qr/boom/ } ], 'failure reported';
-    ok -e path($dir, 'file1'), 'file1 not removed due to failure';
-    ok !-e path($dir, 'file2'), 'file2 removed successfully';
+    is $failed, [], 'no failures on gomi success';
+    is scalar(@gomi_args), 2, 'gomi called with two paths';
 };
 
-subtest 'delete_files reports directory removal failures and continues' => sub {
-    my $dir = temp_dir_with_files('dir1/file1', 'dir2/file2');
+subtest 'delete_files reports all files as failed when gomi fails' => sub {
+    my $dir = temp_dir_with_files('file1', 'file2');
 
-    my $dir1 = path($dir, 'dir1');
-    my $mock = mock 'Path::Tiny' => (
-        around => [
-            remove_tree => sub ($orig, $self, @args) {
-                if ($self->stringify eq $dir1->stringify) {
-                    die "remove_tree failed";
-                }
-                return $orig->($self, @args);
-            },
-        ],
+    my $mock = mock 'DoubleDrive::FileManipulator' => (
+        override => [ _run_gomi => sub { return 1 } ],
     );
 
-    my $failed = DoubleDrive::FileManipulator->delete_files(
-        [
-            DoubleDrive::FileListItem->new(path => $dir1),
-            DoubleDrive::FileListItem->new(path => path($dir, 'dir2')),
-        ],
-    );
+    my $failed = DoubleDrive::FileManipulator->delete_files([
+        DoubleDrive::FileListItem->new(path => path($dir, 'file1')),
+        DoubleDrive::FileListItem->new(path => path($dir, 'file2')),
+    ]);
 
-    is $failed, [ { file => 'dir1', error => match qr/remove_tree failed/ } ], 'remove_tree failure reported';
-    ok -d $dir1, 'failed directory remains';
-    ok !-d path($dir, 'dir2'), 'other directory removed';
-};
-
-subtest 'delete_files removes symlinks without following them' => sub {
-    my $dir = temp_dir_with_files('real_dir/nested');
-    symlink 'real_dir', path($dir, 'link_dir')->stringify;
-
-    my $failed = DoubleDrive::FileManipulator->delete_files(
-        [ DoubleDrive::FileListItem->new(path => path($dir, 'link_dir')) ],
-    );
-
-    is $failed, [], 'no failures deleting symlink';
-    ok !-e path($dir, 'link_dir'), 'symlink removed';
-    ok -d path($dir, 'real_dir'), 'target directory remains';
+    is scalar(@$failed), 2, 'all files reported as failed when gomi fails';
 };
 
 done_testing;

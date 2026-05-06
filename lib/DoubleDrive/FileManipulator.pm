@@ -105,23 +105,15 @@ class DoubleDrive::FileManipulator {
     }
 
     sub delete_files ($class, $file_items) {
-        my $failed = [];
+        my @paths     = map { $_->path->stringify } @$file_items;
+        my $exit_code = $class->_run_gomi(@paths);
+        return $exit_code == 0
+            ? []
+            : [ map { { file => $_->basename, error => 'gomi failed' } } @$file_items ];
+    }
 
-        for my $item (@$file_items) {
-            my $file = $item->path;
-            try {
-                if (-l $file->stringify) {
-                    $file->remove;
-                } elsif ($file->is_dir) {
-                    $file->remove_tree;
-                } else {
-                    $file->remove;
-                }
-            } catch ($e) {
-                push @$failed, { file => $item->basename, error => $e };
-            }
-        }
-
-        return $failed;
+    sub _run_gomi ($class, @paths) {
+        system('gomi', @paths);
+        return $? >> 8;
     }
 }
