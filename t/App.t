@@ -65,6 +65,8 @@ load_app_module();
     sub new($class, %args) { bless \%args, $class }
     sub set_active($self, $active) { }
     sub after_window_attached($self) { }
+    sub current_path($self) { $self->{current_path} }
+    sub change_directory($self, $path) { $self->{current_path} = $path }
 }
 
 {
@@ -211,6 +213,22 @@ subtest 'pane switching' => sub {
     $app->switch_pane();
     is $app->active_pane, $c->{left_pane}, 'switch_pane toggles back to left';
     is $app->opposite_pane, $c->{right_pane}, 'opposite_pane returns right when left is active';
+};
+
+subtest 'swap_panes' => sub {
+    use Path::Tiny qw(path);
+    my $left_path = path('/left');
+    my $right_path = path('/right');
+
+    my $left_pane = TestPane->new(current_path => $left_path);
+    my $right_pane = TestPane->new(current_path => $right_path);
+
+    my $setup = mock_basic_app(left_pane => $left_pane, right_pane => $right_pane);
+    my $app = DoubleDrive::App->new;
+    $app->swap_panes();
+
+    is $left_pane->current_path, $right_path, 'left pane gets right path after swap';
+    is $right_pane->current_path, $left_path, 'right pane gets left path after swap';
 };
 
 subtest 'key bindings' => sub {

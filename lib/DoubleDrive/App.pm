@@ -140,6 +140,7 @@ class DoubleDrive::App {
                 )->execute();
             }
         );
+        $key_dispatcher->bind_normal('o' => sub { $self->swap_panes() });
         $key_dispatcher->bind_normal('O' => sub { $self->opposite_pane()->change_directory($active_pane->current_path) });
         $key_dispatcher->bind_normal('q' => sub { $self->quit() });
     }
@@ -199,6 +200,13 @@ class DoubleDrive::App {
         $active_pane->set_active(false);
         $active_pane = ($active_pane == $left_pane) ? $right_pane : $left_pane;
         $active_pane->set_active(true);
+    }
+
+    method swap_panes() {
+        my $left_path = $left_pane->current_path;
+        my $right_path = $right_pane->current_path;
+        $left_pane->change_directory($right_path);
+        $right_pane->change_directory($left_path);
     }
 
     method opposite_pane() {
