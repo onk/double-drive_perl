@@ -150,6 +150,7 @@ subtest 'all expected keys are registered' => sub {
         # Other
         field s => D();            # sort
         field L => D();            # jump to registered directory
+        field O => D();            # sync opposite pane to current path
         field q => D();            # quit
 
         end();

@@ -140,6 +140,7 @@ class DoubleDrive::App {
                 )->execute();
             }
         );
+        $key_dispatcher->bind_normal('O' => sub { $self->opposite_pane()->change_directory($active_pane->current_path) });
         $key_dispatcher->bind_normal('q' => sub { $self->quit() });
     }
 
